@@ -179,9 +179,12 @@ const AnalogClock = ({ time, size, type, colors, config }) => {
   // Generate hour markers based on config.faceMarkers
   const renderMarkers = () => {
     const markers = [];
-    // Always use config.faceMarkers if available, don't fall back to type
-    // This allows users to customize markers independently of clock type
-    const markerType = config.faceMarkers !== undefined ? config.faceMarkers : type;
+    // Valid marker types for analog clocks
+    const validMarkerTypes = ['dots', 'numbers', 'roman', 'lines', 'none', 'planets'];
+    // Use config.faceMarkers if available and valid, otherwise default to 'dots'
+    const markerType = config.faceMarkers !== undefined && validMarkerTypes.includes(config.faceMarkers)
+      ? config.faceMarkers
+      : 'dots';
 
     if (markerType === 'none') {
       return markers;
@@ -231,18 +234,22 @@ const AnalogClock = ({ time, size, type, colors, config }) => {
 
   // Hand rendering based on handShape config
   const renderHand = (angle, length, handType) => {
-    // Always use config.handShape if available, default to 'classic'
-    const handShape = config.handShape !== undefined ? config.handShape : 'classic';
+    // Valid hand shapes for analog clocks
+    const validHandShapes = ['classic', 'arrow', 'modern', 'minimalist'];
+    // Use config.handShape if available and valid, otherwise default to 'classic'
+    const handShape = config.handShape !== undefined && validHandShapes.includes(config.handShape)
+      ? config.handShape
+      : 'classic';
     const x2 = center + Math.sin(angle * Math.PI / 180) * length;
     const y2 = center - Math.cos(angle * Math.PI / 180) * length;
 
-    // Width based on hand type
+    // Width based on hand type with defensive fallback
     const widthMap = {
       hour: size * 0.04,
       minute: size * 0.03,
       second: size * 0.01
     };
-    const width = type === 'trail' && handType === 'second' ? size * 0.01 : widthMap[handType];
+    const width = type === 'trail' && handType === 'second' ? size * 0.01 : (widthMap[handType] || size * 0.02);
 
     switch (handShape) {
       case 'classic':
@@ -777,9 +784,11 @@ export const ClockWidget = ({ config, brandTheme }) => {
     // ANALOG CLOCKS
     if (config.clockType.startsWith('analog-')) {
       const analogType = config.clockType.replace('analog-', '');
+      // Ensure analog size is valid - default to 240 (large) if undefined
+      const analogSize = typeof size.analog === 'number' && size.analog > 0 ? size.analog : 240;
       return <AnalogClock
         time={time}
-        size={size.analog}
+        size={analogSize}
         type={analogType}
         colors={colors}
         config={config}

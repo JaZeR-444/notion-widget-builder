@@ -851,7 +851,7 @@ const WidgetField = React.memo(({ field, value, onChange }) => {
   }
 
   return null;
-};
+});
 
 const FlipCard = ({ value, label, colors, size }) => (
   <div className="inline-flex flex-col items-center mx-1">
