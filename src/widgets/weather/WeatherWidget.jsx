@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { CloudSun, CloudRain, Cloud, Sun, Wind, Droplets, CloudSnow, CloudDrizzle, CloudLightning, CloudFog, AlertTriangle, MapPin } from 'lucide-react';
 
 // JAZER_BRAND constants
@@ -45,12 +46,70 @@ const MOCK_WEATHER = {
   ]
 };
 
+// WMO Weather Code Mapping (single source of truth)
+const WMO_WEATHER_MAPPING = {
+  0: { condition: 'Clear', icon: 'clear' },
+  1: { condition: 'Partly Cloudy', icon: 'partly-cloudy' },
+  2: { condition: 'Partly Cloudy', icon: 'partly-cloudy' },
+  3: { condition: 'Partly Cloudy', icon: 'partly-cloudy' },
+  45: { condition: 'Fog', icon: 'fog' },
+  48: { condition: 'Fog', icon: 'fog' },
+  51: { condition: 'Drizzle', icon: 'drizzle' },
+  53: { condition: 'Drizzle', icon: 'drizzle' },
+  55: { condition: 'Drizzle', icon: 'drizzle' },
+  56: { condition: 'Drizzle', icon: 'drizzle' },
+  57: { condition: 'Drizzle', icon: 'drizzle' },
+  61: { condition: 'Rain', icon: 'rain' },
+  63: { condition: 'Rain', icon: 'rain' },
+  65: { condition: 'Rain', icon: 'rain' },
+  66: { condition: 'Rain', icon: 'rain' },
+  67: { condition: 'Rain', icon: 'rain' },
+  71: { condition: 'Snow', icon: 'snow' },
+  73: { condition: 'Snow', icon: 'snow' },
+  75: { condition: 'Snow', icon: 'snow' },
+  77: { condition: 'Snow', icon: 'snow' },
+  80: { condition: 'Rain', icon: 'rain' },
+  81: { condition: 'Rain', icon: 'rain' },
+  82: { condition: 'Rain', icon: 'rain' },
+  85: { condition: 'Snow', icon: 'snow' },
+  86: { condition: 'Snow', icon: 'snow' },
+  95: { condition: 'Thunderstorm', icon: 'thunderstorm' },
+  96: { condition: 'Thunderstorm', icon: 'thunderstorm' },
+  99: { condition: 'Thunderstorm', icon: 'thunderstorm' },
+};
+
+/**
+ * Get weather condition and icon from WMO code
+ * @param {number} code - WMO weather code
+ * @returns {{ condition: string, icon: string }} Weather condition and icon
+ */
+const getWeatherFromWMO = (code) => {
+  // Direct lookup first
+  if (WMO_WEATHER_MAPPING[code]) {
+    return WMO_WEATHER_MAPPING[code];
+  }
+  
+  // Range-based fallback for codes not explicitly mapped
+  if (code === 0) return { condition: 'Clear', icon: 'clear' };
+  if (code <= 3) return { condition: 'Partly Cloudy', icon: 'partly-cloudy' };
+  if (code <= 48) return { condition: 'Fog', icon: 'fog' };
+  if (code <= 57) return { condition: 'Drizzle', icon: 'drizzle' };
+  if (code <= 67) return { condition: 'Rain', icon: 'rain' };
+  if (code <= 77) return { condition: 'Snow', icon: 'snow' };
+  if (code <= 82) return { condition: 'Rain', icon: 'rain' };
+  if (code <= 86) return { condition: 'Snow', icon: 'snow' };
+  if (code >= 95) return { condition: 'Thunderstorm', icon: 'thunderstorm' };
+  
+  return { condition: 'Cloudy', icon: 'clouds' };
+};
+
 // Weather icon component
 const WeatherIcon = ({ condition, animate, greyscale, size = 32 }) => {
   const iconProps = {
     size,
     className: `${animate ? 'animate-pulse' : ''} ${greyscale ? 'grayscale' : ''}`,
-    style: { color: greyscale ? JAZER_BRAND.colors.softSlate : JAZER_BRAND.colors.sunburstGold }
+    style: { color: greyscale ? JAZER_BRAND.colors.softSlate : JAZER_BRAND.colors.sunburstGold },
+    'aria-hidden': true
   };
 
   // Map OpenWeatherMap condition codes to icons
@@ -74,12 +133,24 @@ const WeatherIcon = ({ condition, animate, greyscale, size = 32 }) => {
     'tornado': <Wind {...iconProps} style={{ ...iconProps.style, color: JAZER_BRAND.colors.electricPurple }} />
   };
 
-  return conditionMap[condition?.toLowerCase()] || <CloudSun {...iconProps} style={{ ...iconProps.style, color: JAZER_BRAND.colors.aetherTeal }} />;
+  const displayCondition = condition?.toLowerCase() || 'partly-cloudy';
+  const ariaLabel = `Weather condition: ${condition || 'Partly Cloudy'}`;
+  
+  return (
+    <span role="img" aria-label={ariaLabel}>
+      {conditionMap[displayCondition] || <CloudSun {...iconProps} style={{ ...iconProps.style, color: JAZER_BRAND.colors.aetherTeal }} />}
+    </span>
+  );
 };
 
 // Loading skeleton component
 const LoadingSkeleton = () => (
-  <div className="animate-pulse space-y-4">
+  <div 
+    className="animate-pulse space-y-4"
+    role="status"
+    aria-label="Loading weather data"
+    aria-live="polite"
+  >
     <div className="flex items-center gap-3 mb-4">
       <div className="w-12 h-12 bg-gray-300 rounded-full"></div>
       <div className="h-6 bg-gray-300 rounded w-32"></div>
@@ -90,6 +161,7 @@ const LoadingSkeleton = () => (
       <div className="h-4 bg-gray-300 rounded w-3/4"></div>
       <div className="h-4 bg-gray-300 rounded w-5/6"></div>
     </div>
+    <span className="sr-only">Loading weather data...</span>
   </div>
 );
 
@@ -115,6 +187,7 @@ export const WeatherWidget = ({ config }) => {
   const [weatherData, setWeatherData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [geoError, setGeoError] = useState(null);
   const [currentLocation, setCurrentLocation] = useState(config.weatherLocation);
   
   const [isDark, setIsDark] = useState(() => {
@@ -127,14 +200,17 @@ export const WeatherWidget = ({ config }) => {
   });
 
   // Fetch weather data from Open-Meteo API (free, no key required)
-  const fetchWeatherData = async (location) => {
+  const fetchWeatherData = useCallback(async (location, options = {}) => {
+    const { signal } = options;
     setLoading(true);
     setError(null);
+    setGeoError(null);
 
     try {
       // Geocode the location using Open-Meteo Geocoding API
       const geoResponse = await fetch(
-        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=en&format=json`
+        `https://geocoding-api.open-meteo.com/v1/search?name=${encodeURIComponent(location)}&count=1&language=en&format=json`,
+        { signal }
       );
       
       if (!geoResponse.ok) throw new Error('Location not found');
@@ -152,59 +228,34 @@ export const WeatherWidget = ({ config }) => {
       const precipUnit = config.preferredUnits === 'metric' ? 'mm' : 'inch';
       
       const weatherResponse = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max&temperature_unit=${tempUnit}&wind_speed_unit=${windUnit}&precipitation_unit=${precipUnit}&timezone=auto`
+        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max&temperature_unit=${tempUnit}&wind_speed_unit=${windUnit}&precipitation_unit=${precipUnit}&timezone=auto`,
+        { signal }
       );
 
       if (!weatherResponse.ok) throw new Error('Failed to fetch weather data');
 
       const data = await weatherResponse.json();
 
-      // Map WMO weather codes to conditions
-      const getConditionFromWMO = (code) => {
-        if (code === 0) return 'Clear';
-        if (code <= 3) return 'Partly Cloudy';
-        if (code <= 48) return 'Fog';
-        if (code <= 67) return 'Rain';
-        if (code <= 77) return 'Snow';
-        if (code <= 82) return 'Rain';
-        if (code <= 86) return 'Snow';
-        if (code <= 99) return 'Thunderstorm';
-        return 'Cloudy';
-      };
-
-      const getIconFromWMO = (code) => {
-        if (code === 0) return 'clear';
-        if (code <= 3) return 'partly-cloudy';
-        if (code <= 48) return 'fog';
-        if (code <= 57) return 'drizzle';
-        if (code <= 67) return 'rain';
-        if (code <= 77) return 'snow';
-        if (code <= 82) return 'rain';
-        if (code <= 86) return 'snow';
-        if (code >= 95) return 'thunderstorm';
-        return 'clouds';
-      };
-
-      // Transform API data to our format
+      // Transform API data to our format using shared utility function
       const transformedData = {
         current: {
           temperature: Math.round(data.current.temperature_2m),
-          condition: getConditionFromWMO(data.current.weather_code),
+          condition: getWeatherFromWMO(data.current.weather_code).condition,
           humidity: Math.round(data.current.relative_humidity_2m),
           wind: Math.round(data.current.wind_speed_10m),
           feelsLike: Math.round(data.current.apparent_temperature),
           uvIndex: 0, // Open-Meteo doesn't provide UV index in free tier
-          icon: getIconFromWMO(data.current.weather_code)
+          icon: getWeatherFromWMO(data.current.weather_code).icon
         },
         forecast: data.daily.time.slice(0, config.numberOfDays + 1).map((dateStr, idx) => ({
           day: new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short' }),
           date: config.displayDates ? new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null,
           high: Math.round(data.daily.temperature_2m_max[idx]),
           low: Math.round(data.daily.temperature_2m_min[idx]),
-          condition: getConditionFromWMO(data.daily.weather_code[idx]),
+          condition: getWeatherFromWMO(data.daily.weather_code[idx]).condition,
           precipitation: Math.round(data.daily.precipitation_probability_max[idx] || 0),
           wind: Math.round(data.daily.wind_speed_10m_max[idx]),
-          icon: getIconFromWMO(data.daily.weather_code[idx])
+          icon: getWeatherFromWMO(data.daily.weather_code[idx]).icon
         })),
         alerts: [] // Open-Meteo free tier doesn't include alerts
       };
@@ -212,29 +263,99 @@ export const WeatherWidget = ({ config }) => {
       setWeatherData(transformedData);
       setLoading(false);
     } catch (err) {
-      console.error('Weather fetch error:', err);
-      setError(err.message);
-      setWeatherData(MOCK_WEATHER);
-      setLoading(false);
+      // Only handle error if not aborted
+      if (err.name !== 'AbortError') {
+        console.error('Weather fetch error:', err);
+        setError(err.message);
+        setWeatherData(MOCK_WEATHER);
+        setLoading(false);
+      }
     }
-  };
+  }, [config.preferredUnits, config.numberOfDays, config.displayDates]);
+
+  // Fetch weather by coordinates (for geolocation)
+  const fetchWeatherByCoordinates = useCallback(async (latitude, longitude, locationName, options = {}) => {
+    const { signal } = options;
+    setLoading(true);
+    setError(null);
+    setGeoError(null);
+
+    try {
+      const tempUnit = config.preferredUnits === 'metric' ? 'celsius' : 'fahrenheit';
+      const windUnit = config.preferredUnits === 'metric' ? 'kmh' : 'mph';
+      const precipUnit = config.preferredUnits === 'metric' ? 'mm' : 'inch';
+      
+      const weatherResponse = await fetch(
+        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max&temperature_unit=${tempUnit}&wind_speed_unit=${windUnit}&precipitation_unit=${precipUnit}&timezone=auto`,
+        { signal }
+      );
+
+      if (!weatherResponse.ok) throw new Error('Failed to fetch weather data');
+
+      const data = await weatherResponse.json();
+
+      // Transform API data to our format using shared utility function
+      const transformedData = {
+        current: {
+          temperature: Math.round(data.current.temperature_2m),
+          condition: getWeatherFromWMO(data.current.weather_code).condition,
+          humidity: Math.round(data.current.relative_humidity_2m),
+          wind: Math.round(data.current.wind_speed_10m),
+          feelsLike: Math.round(data.current.apparent_temperature),
+          uvIndex: 0,
+          icon: getWeatherFromWMO(data.current.weather_code).icon
+        },
+        forecast: data.daily.time.slice(0, config.numberOfDays + 1).map((dateStr, idx) => ({
+          day: new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short' }),
+          date: config.displayDates ? new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null,
+          high: Math.round(data.daily.temperature_2m_max[idx]),
+          low: Math.round(data.daily.temperature_2m_min[idx]),
+          condition: getWeatherFromWMO(data.daily.weather_code[idx]).condition,
+          precipitation: Math.round(data.daily.precipitation_probability_max[idx] || 0),
+          wind: Math.round(data.daily.wind_speed_10m_max[idx]),
+          icon: getWeatherFromWMO(data.daily.weather_code[idx]).icon
+        })),
+        alerts: []
+      };
+
+      setCurrentLocation(locationName);
+      setWeatherData(transformedData);
+      setLoading(false);
+    } catch (err) {
+      // Only handle error if not aborted
+      if (err.name !== 'AbortError') {
+        console.error('Weather fetch error:', err);
+        setError(err.message);
+        setWeatherData(MOCK_WEATHER);
+        setLoading(false);
+      }
+    }
+  }, [config.preferredUnits, config.numberOfDays, config.displayDates]);
 
   // Auto-detect location using geolocation
-  const detectLocation = () => {
+  const detectLocation = useCallback((options = {}) => {
+    const { signal } = options;
+    
     if (!navigator.geolocation) {
-      alert('Geolocation is not supported by your browser');
+      setGeoError('Geolocation is not supported by your browser');
       return;
     }
 
     setLoading(true);
+    setGeoError(null);
+    
     navigator.geolocation.getCurrentPosition(
       async (position) => {
+        // Check if aborted before proceeding
+        if (signal?.aborted) return;
+        
         try {
           const { latitude, longitude } = position.coords;
           
           // Reverse geocode to get location name using Open-Meteo
           const response = await fetch(
-            `https://geocoding-api.open-meteo.com/v1/search?latitude=${latitude}&longitude=${longitude}&count=1&language=en&format=json`
+            `https://geocoding-api.open-meteo.com/v1/search?latitude=${latitude}&longitude=${longitude}&count=1&language=en&format=json`,
+            { signal }
           );
           
           if (!response.ok) throw new Error('Failed to get location name');
@@ -246,120 +367,54 @@ export const WeatherWidget = ({ config }) => {
             setCurrentLocation(locationName);
             
             // Fetch weather directly with coordinates
-            fetchWeatherByCoordinates(latitude, longitude, locationName);
+            fetchWeatherByCoordinates(latitude, longitude, locationName, { signal });
           }
         } catch (err) {
-          console.error('Geolocation error:', err);
-          setError('Failed to detect location');
-          setLoading(false);
+          if (err.name !== 'AbortError') {
+            console.error('Geolocation error:', err);
+            setError('Failed to detect location');
+            setLoading(false);
+          }
         }
       },
       (err) => {
         console.error('Geolocation error:', err);
-        alert('Unable to retrieve your location');
+        setGeoError('Unable to retrieve your location. Please check your browser permissions.');
         setLoading(false);
       }
     );
-  };
+  }, [fetchWeatherByCoordinates]);
 
-  // Fetch weather by coordinates (for geolocation)
-  const fetchWeatherByCoordinates = async (latitude, longitude, locationName) => {
-    setLoading(true);
-    setError(null);
-
-    try {
-      const tempUnit = config.preferredUnits === 'metric' ? 'celsius' : 'fahrenheit';
-      const windUnit = config.preferredUnits === 'metric' ? 'kmh' : 'mph';
-      const precipUnit = config.preferredUnits === 'metric' ? 'mm' : 'inch';
-      
-      const weatherResponse = await fetch(
-        `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,weather_code,wind_speed_10m&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max&temperature_unit=${tempUnit}&wind_speed_unit=${windUnit}&precipitation_unit=${precipUnit}&timezone=auto`
-      );
-
-      if (!weatherResponse.ok) throw new Error('Failed to fetch weather data');
-
-      const data = await weatherResponse.json();
-
-      const getConditionFromWMO = (code) => {
-        if (code === 0) return 'Clear';
-        if (code <= 3) return 'Partly Cloudy';
-        if (code <= 48) return 'Fog';
-        if (code <= 67) return 'Rain';
-        if (code <= 77) return 'Snow';
-        if (code <= 82) return 'Rain';
-        if (code <= 86) return 'Snow';
-        if (code <= 99) return 'Thunderstorm';
-        return 'Cloudy';
-      };
-
-      const getIconFromWMO = (code) => {
-        if (code === 0) return 'clear';
-        if (code <= 3) return 'partly-cloudy';
-        if (code <= 48) return 'fog';
-        if (code <= 57) return 'drizzle';
-        if (code <= 67) return 'rain';
-        if (code <= 77) return 'snow';
-        if (code <= 82) return 'rain';
-        if (code <= 86) return 'snow';
-        if (code >= 95) return 'thunderstorm';
-        return 'clouds';
-      };
-
-      const transformedData = {
-        current: {
-          temperature: Math.round(data.current.temperature_2m),
-          condition: getConditionFromWMO(data.current.weather_code),
-          humidity: Math.round(data.current.relative_humidity_2m),
-          wind: Math.round(data.current.wind_speed_10m),
-          feelsLike: Math.round(data.current.apparent_temperature),
-          uvIndex: 0,
-          icon: getIconFromWMO(data.current.weather_code)
-        },
-        forecast: data.daily.time.slice(0, config.numberOfDays + 1).map((dateStr, idx) => ({
-          day: new Date(dateStr).toLocaleDateString('en-US', { weekday: 'short' }),
-          date: config.displayDates ? new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null,
-          high: Math.round(data.daily.temperature_2m_max[idx]),
-          low: Math.round(data.daily.temperature_2m_min[idx]),
-          condition: getConditionFromWMO(data.daily.weather_code[idx]),
-          precipitation: Math.round(data.daily.precipitation_probability_max[idx] || 0),
-          wind: Math.round(data.daily.wind_speed_10m_max[idx]),
-          icon: getIconFromWMO(data.daily.weather_code[idx])
-        })),
-        alerts: []
-      };
-
-      setCurrentLocation(locationName);
-      setWeatherData(transformedData);
-      setLoading(false);
-    } catch (err) {
-      console.error('Weather fetch error:', err);
-      setError(err.message);
-      setWeatherData(MOCK_WEATHER);
-      setLoading(false);
-    }
-  };
-
-  // Fetch weather on mount and when location changes
+  // Fetch weather on mount and when location/config changes
   useEffect(() => {
+    const controller = new AbortController();
+    
     if (config.useGeolocation) {
-      detectLocation();
+      detectLocation({ signal: controller.signal });
     } else {
-      fetchWeatherData(currentLocation);
+      fetchWeatherData(currentLocation, { signal: controller.signal });
     }
-  }, [config.preferredUnits]);
+    
+    return () => controller.abort();
+  }, [config.preferredUnits, config.useGeolocation, currentLocation, detectLocation, fetchWeatherData]);
 
   // Auto-refresh every 10 minutes
   useEffect(() => {
+    const controller = new AbortController();
+    
     const interval = setInterval(() => {
       if (config.useGeolocation) {
-        detectLocation();
+        detectLocation({ signal: controller.signal });
       } else {
-        fetchWeatherData(currentLocation);
+        fetchWeatherData(currentLocation, { signal: controller.signal });
       }
     }, 600000); // 10 minutes
 
-    return () => clearInterval(interval);
-  }, [currentLocation, config.useGeolocation]);
+    return () => {
+      clearInterval(interval);
+      controller.abort();
+    };
+  }, [currentLocation, config.useGeolocation, detectLocation, fetchWeatherData]);
 
   // Load Google Font if selected
   useEffect(() => {
@@ -370,7 +425,13 @@ export const WeatherWidget = ({ config }) => {
       document.head.appendChild(link);
 
       return () => {
-        document.head.removeChild(link);
+        try {
+          if (link && document.head.contains(link)) {
+            document.head.removeChild(link);
+          }
+        } catch (e) {
+          console.warn('Font cleanup error:', e);
+        }
       };
     }
   }, [config.googleFont]);
@@ -392,8 +453,8 @@ export const WeatherWidget = ({ config }) => {
   // Get colors based on appearance mode
   const textColor = isDark ? config.textColorDark : config.textColorLight;
   
-  // Get font family based on config
-  const getFontFamily = () => {
+  // Get font family based on config (memoized)
+  const fontFamily = useMemo(() => {
     if (config.googleFont !== 'none') {
       return `"${config.googleFont.replace(/\+/g, ' ')}", system-ui, sans-serif`;
     }
@@ -406,10 +467,10 @@ export const WeatherWidget = ({ config }) => {
       default:
         return JAZER_BRAND.fonts.body;
     }
-  };
+  }, [config.googleFont, config.textFontFamily]);
 
-  // Get background texture pattern
-  const getBackgroundTexture = () => {
+  // Get background texture pattern (memoized)
+  const bgTexture = useMemo(() => {
     if (config.backgroundTexture === 'none') return '';
     
     const textures = {
@@ -421,10 +482,10 @@ export const WeatherWidget = ({ config }) => {
     };
     
     return textures[config.backgroundTexture] || '';
-  };
+  }, [config.backgroundTexture]);
 
-  // Apply preset themes
-  const getPresetThemeStyles = () => {
+  // Apply preset themes (memoized)
+  const presetTheme = useMemo(() => {
     if (config.presetTheme === 'none') return {};
     
     const themes = {
@@ -473,12 +534,10 @@ export const WeatherWidget = ({ config }) => {
     };
     
     return themes[config.presetTheme] || {};
-  };
-
-  const presetTheme = getPresetThemeStyles();
+  }, [config.presetTheme]);
   
-  // Dynamic gradient backgrounds based on weather condition
-  const getWeatherGradient = () => {
+  // Dynamic gradient backgrounds based on weather condition (memoized)
+  const bgColor = useMemo(() => {
     if (config.useTransparentBackground) return 'transparent';
     if (config.setBackgroundColor && !weatherData) return config.backgroundColor;
     
@@ -505,28 +564,31 @@ export const WeatherWidget = ({ config }) => {
     return config.setBackgroundColor 
       ? config.backgroundColor 
       : (gradients[condition] || (isDark ? JAZER_BRAND.colors.nightBlack : JAZER_BRAND.colors.stardustWhite));
-  };
+  }, [config.useTransparentBackground, config.setBackgroundColor, config.backgroundColor, config.presetTheme, presetTheme.gradient, weatherData, isDark]);
   
-  const bgColor = getWeatherGradient();
-  const bgTexture = getBackgroundTexture();
-  
-  // Glassmorphism styles for transparent background
-  const glassmorphismStyles = config.useTransparentBackground ? {
-    backdropFilter: 'blur(10px)',
-    WebkitBackdropFilter: 'blur(10px)',
-    backgroundColor: isDark ? 'rgba(11, 14, 18, 0.7)' : 'rgba(248, 249, 255, 0.7)',
-    borderRadius: '12px',
-    border: `1px solid ${isDark ? 'rgba(248, 249, 255, 0.1)' : 'rgba(11, 14, 18, 0.1)'}`
-  } : {};
+  // Glassmorphism styles for transparent background (memoized)
+  const glassmorphismStyles = useMemo(() => {
+    return config.useTransparentBackground ? {
+      backdropFilter: 'blur(10px)',
+      WebkitBackdropFilter: 'blur(10px)',
+      backgroundColor: isDark ? 'rgba(11, 14, 18, 0.7)' : 'rgba(248, 249, 255, 0.7)',
+      borderRadius: '12px',
+      border: `1px solid ${isDark ? 'rgba(248, 249, 255, 0.1)' : 'rgba(11, 14, 18, 0.1)'}`
+    } : {};
+  }, [config.useTransparentBackground, isDark]);
 
   const textShadow = config.textShadows ? '0 2px 4px rgba(0,0,0,0.1)' : 'none';
   const glowEffect = config.glowEffect ? (presetTheme.glow || JAZER_BRAND.glow) : 'none';
-  const gradientTextStyle = config.gradientText ? {
-    background: presetTheme.gradient || JAZER_BRAND.gradient,
-    WebkitBackgroundClip: 'text',
-    WebkitTextFillColor: 'transparent',
-    backgroundClip: 'text'
-  } : {};
+  
+  // Gradient text style (memoized)
+  const gradientTextStyle = useMemo(() => {
+    return config.gradientText ? {
+      background: presetTheme.gradient || JAZER_BRAND.gradient,
+      WebkitBackgroundClip: 'text',
+      WebkitTextFillColor: 'transparent',
+      backgroundClip: 'text'
+    } : {};
+  }, [config.gradientText, presetTheme.gradient]);
 
   // Convert temperature based on units (API already returns in correct units)
   const convertTemp = (temp) => Math.round(temp);
@@ -601,16 +663,30 @@ export const WeatherWidget = ({ config }) => {
         backgroundImage: bgTexture ? `${bgTexture}` : undefined,
         backgroundSize: config.backgroundTexture === 'dots' ? '20px 20px' : config.backgroundTexture === 'grid' ? '20px 20px' : 'auto',
         color: textColor,
-        fontFamily: getFontFamily(),
+        fontFamily: fontFamily,
         textAlign: config.textAlign,
         boxShadow: glowEffect,
         ...glassmorphismStyles
       }}
+      role="region"
+      aria-label="Weather widget"
     >
       {loading ? (
         <LoadingSkeleton />
       ) : (
         <>
+          {/* Geolocation Error Display */}
+          {geoError && (
+            <div 
+              className="mt-4 p-3 bg-yellow-100 text-yellow-800 rounded-lg text-sm"
+              role="alert"
+              aria-live="polite"
+            >
+              <AlertTriangle size={16} className="inline mr-2" aria-hidden="true" />
+              {geoError}
+            </div>
+          )}
+
           {/* Severe Weather Alerts */}
           {config.showSevereAlerts && weatherData?.alerts && weatherData.alerts.length > 0 && (
             <div className="mb-4">
@@ -641,11 +717,12 @@ export const WeatherWidget = ({ config }) => {
                   </h2>
                   {config.useGeolocation && (
                     <button
-                      onClick={detectLocation}
+                      onClick={() => detectLocation()}
                       className="flex items-center gap-1 text-xs opacity-70 hover:opacity-100 transition-opacity mt-1"
                       style={{ fontSize: `${12 * config.fontScale}px` }}
+                      aria-label="Detect your current location"
                     >
-                      <MapPin size={12 * config.fontScale} />
+                      <MapPin size={12 * config.fontScale} aria-hidden="true" />
                       Detect Location
                     </button>
                   )}
@@ -660,7 +737,7 @@ export const WeatherWidget = ({ config }) => {
             </div>
 
             {/* Forecast */}
-            <div className="flex-1">
+            <div className="flex-1" role="region" aria-label="Weather forecast">
               <h3 className="text-sm font-semibold uppercase tracking-wider opacity-70 mb-3" style={{ textShadow, fontSize: `${14 * config.fontScale}px` }}>
                 {config.numberOfDays}-Day Forecast
               </h3>
@@ -704,7 +781,7 @@ export const WeatherWidget = ({ config }) => {
                       )}
                       {config.dailyWeatherFields.includes('precipitation') && day.precipitation > 0 && (
                         <div className="text-xs flex items-center justify-center gap-1" style={{ fontSize: `${12 * config.fontScale}px` }}>
-                          <Droplets size={10 * config.fontScale} />
+                          <Droplets size={10 * config.fontScale} aria-hidden="true" />
                           {day.precipitation}%
                         </div>
                       )}
@@ -717,7 +794,11 @@ export const WeatherWidget = ({ config }) => {
 
           {/* Error Display */}
           {error && (
-            <div className="mt-4 p-3 bg-red-100 text-red-800 rounded-lg text-sm">
+            <div 
+              className="mt-4 p-3 bg-red-100 text-red-800 rounded-lg text-sm"
+              role="alert"
+              aria-live="assertive"
+            >
               {error}
             </div>
           )}
@@ -732,6 +813,7 @@ export const WeatherWidget = ({ config }) => {
                 fontFamily: JAZER_BRAND.fonts.heading,
                 fontSize: `${14 * config.fontScale}px`
               }}
+              aria-label="Customize weather widget settings"
             >
               Customize
             </button>
@@ -740,4 +822,39 @@ export const WeatherWidget = ({ config }) => {
       )}
     </div>
   );
+};
+
+// PropTypes validation for config prop
+WeatherWidget.propTypes = {
+  config: PropTypes.shape({
+    weatherLocation: PropTypes.string,
+    useGeolocation: PropTypes.bool,
+    preferredUnits: PropTypes.oneOf(['metric', 'imperial']),
+    numberOfDays: PropTypes.number,
+    displayDates: PropTypes.bool,
+    hideTodayInForecast: PropTypes.bool,
+    currentWeatherFields: PropTypes.arrayOf(PropTypes.string),
+    dailyWeatherFields: PropTypes.arrayOf(PropTypes.string),
+    showSevereAlerts: PropTypes.bool,
+    showCustomizeButton: PropTypes.bool,
+    appearanceMode: PropTypes.oneOf(['light', 'dark', 'system']),
+    textColorLight: PropTypes.string,
+    textColorDark: PropTypes.string,
+    textFontFamily: PropTypes.oneOf(['sans', 'serif', 'mono']),
+    googleFont: PropTypes.string,
+    fontScale: PropTypes.number,
+    textAlign: PropTypes.oneOf(['left', 'center', 'right']),
+    textShadows: PropTypes.bool,
+    gradientText: PropTypes.bool,
+    glowEffect: PropTypes.bool,
+    animateIcons: PropTypes.bool,
+    greyscaleIcons: PropTypes.bool,
+    useTransparentBackground: PropTypes.bool,
+    setBackgroundColor: PropTypes.bool,
+    backgroundColor: PropTypes.string,
+    backgroundTexture: PropTypes.oneOf(['none', 'noise', 'stars', 'dots', 'grid', 'waves']),
+    presetTheme: PropTypes.oneOf(['none', 'cyberpunk', 'stealth', 'ocean', 'sunset', 'forest', 'neon', 'midnight']),
+    orientation: PropTypes.oneOf(['auto', 'horizontal', 'compact', 'wide']),
+    visuallyGroupForecast: PropTypes.bool,
+  }).isRequired,
 };
