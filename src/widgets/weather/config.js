@@ -24,6 +24,7 @@ export const weatherConfig = {
   defaultConfig: {
     // Location Settings
     weatherLocation: 'New York, NY',
+    useGeolocation: false,
     preferredUnits: 'imperial', // 'imperial' | 'metric'
     numberOfDays: 5,
 
@@ -33,7 +34,7 @@ export const weatherConfig = {
 
     // Forecast Options
     hideTodayInForecast: false,
-    displayDates: false, // Locked feature
+    displayDates: false,
 
     // Layout Options
     orientation: 'auto', // 'auto' | 'horizontal' | 'compact' | 'wide' | 'tall'
@@ -42,9 +43,10 @@ export const weatherConfig = {
     animateIcons: true,
     greyscaleIcons: false,
     textShadows: false,
-    useTransparentBackground: false, // Locked feature
+    useTransparentBackground: false,
     setBackgroundColor: true,
     backgroundColor: JAZER_BRAND.colors.stardustWhite,
+    fontScale: 1.0,
 
     // Color Customization
     textColorLight: JAZER_BRAND.colors.nightBlack,
@@ -52,9 +54,11 @@ export const weatherConfig = {
     appearanceMode: 'system', // 'do-nothing' | 'system' | 'light' | 'dark'
 
     // Additional Features
-    visuallyGroupForecast: false, // Locked feature
+    visuallyGroupForecast: false,
     showHoverMenu: true,
-    showCustomizeButton: true
+    showCustomizeButton: true,
+    timeFormat: '12h', // '12h' | '24h'
+    showSevereAlerts: true
   },
 
   fields: [
@@ -64,7 +68,14 @@ export const weatherConfig = {
       label: 'Weather Location',
       type: 'text',
       section: 'locationSettings',
-      placeholder: 'City, State or ZIP'
+      placeholder: 'City, State or ZIP',
+      helpText: 'Uses free Open-Meteo API - no key required'
+    },
+    {
+      name: 'useGeolocation',
+      label: 'Auto-Detect Location',
+      type: 'boolean',
+      section: 'locationSettings'
     },
     {
       name: 'preferredUnits',
@@ -129,8 +140,7 @@ export const weatherConfig = {
       name: 'displayDates',
       label: 'Display Dates',
       type: 'boolean',
-      section: 'forecastOptions',
-      locked: true
+      section: 'forecastOptions'
     },
 
     // Layout Options Section
@@ -171,8 +181,16 @@ export const weatherConfig = {
       name: 'useTransparentBackground',
       label: 'Use Transparent Background',
       type: 'boolean',
+      section: 'visualOptions'
+    },
+    {
+      name: 'fontScale',
+      label: 'Font Scale',
+      type: 'range',
       section: 'visualOptions',
-      locked: true
+      min: 0.8,
+      max: 1.2,
+      step: 0.1
     },
     {
       name: 'setBackgroundColor',
@@ -218,8 +236,23 @@ export const weatherConfig = {
       name: 'visuallyGroupForecast',
       label: 'Visually Group Forecast',
       type: 'boolean',
+      section: 'features'
+    },
+    {
+      name: 'timeFormat',
+      label: 'Time Format',
+      type: 'select',
       section: 'features',
-      locked: true
+      options: [
+        { label: '12-hour (AM/PM)', value: '12h' },
+        { label: '24-hour', value: '24h' }
+      ]
+    },
+    {
+      name: 'showSevereAlerts',
+      label: 'Show Severe Weather Alerts',
+      type: 'boolean',
+      section: 'features'
     },
     {
       name: 'showHoverMenu',
