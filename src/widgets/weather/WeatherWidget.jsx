@@ -653,15 +653,13 @@ export const WeatherWidget = ({ config }) => {
         return 'flex-col md:flex-row';
     }
   };
-
-  // Determine if bgColor is a gradient or solid color
-  const isGradientBg = typeof bgColor === 'string' && bgColor.includes('gradient');
   
   // Build background styles properly to avoid conflicts
   const backgroundStyles = useMemo(() => {
     const styles = {};
+    const isGradient = typeof bgColor === 'string' && bgColor.includes('gradient');
     
-    if (isGradientBg) {
+    if (isGradient) {
       // For gradients, combine with texture using comma-separated backgrounds
       if (bgTexture) {
         styles.backgroundImage = `${bgTexture}, ${bgColor}`;
@@ -681,7 +679,7 @@ export const WeatherWidget = ({ config }) => {
       : 'auto';
     
     return styles;
-  }, [bgColor, bgTexture, isGradientBg, config.backgroundTexture]);
+  }, [bgColor, bgTexture, config.backgroundTexture]);
 
   return (
     <div

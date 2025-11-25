@@ -149,13 +149,15 @@ export const CountdownWidget = ({ config }) => {
     return () => clearTimeout(timeout);
   }, [showConfetti, confettiStartTime, config.confettiDuration]);
 
-  // Get active colors with fallback defaults
-  const defaultColors = {
-    textColor: isDark ? '#F8F9FF' : '#0B0E12',
-    panelColor: isDark ? '#1F2937' : '#F8F9FF',
-    digitColor: isDark ? '#F8F9FF' : '#0B0E12'
-  };
-  const colors = (isDark ? config.darkMode : config.lightMode) || defaultColors;
+  // Get active colors with fallback defaults (memoized)
+  const colors = useMemo(() => {
+    const defaultColors = {
+      textColor: isDark ? '#F8F9FF' : '#0B0E12',
+      panelColor: isDark ? '#1F2937' : '#F8F9FF',
+      digitColor: isDark ? '#F8F9FF' : '#0B0E12'
+    };
+    return (isDark ? config.darkMode : config.lightMode) || defaultColors;
+  }, [isDark, config.darkMode, config.lightMode]);
 
   // Font mapping
   const getFontFamily = (fontType) => {
