@@ -655,7 +655,7 @@ const ButtonManager = ({ value, onChange }) => {
 };
 
 // Enhanced WidgetField Component - Supports all field types
-const WidgetField = ({ field, value, onChange }) => {
+const WidgetField = React.memo(({ field, value, onChange }) => {
   if (field.locked) {
     return (
       <div className="flex justify-between items-center py-1 opacity-50">
@@ -684,9 +684,10 @@ const WidgetField = ({ field, value, onChange }) => {
       <div className="space-y-1">
         <label className="text-xs text-gray-400 font-bold">{field.label}</label>
         <select
-          value={value}
+          value={value || ''}
           onChange={e => onChange(e.target.value)}
           className="w-full bg-gray-800 text-white text-sm p-2 rounded border border-gray-700 outline-none focus:border-purple-500"
+          style={{ pointerEvents: 'auto' }}
         >
           {field.options.map(o => (
             <option key={o.value} value={o.value} disabled={o.disabled}>
