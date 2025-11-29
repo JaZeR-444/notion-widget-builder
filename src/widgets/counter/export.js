@@ -90,7 +90,7 @@ export const generateCounterHTML = (config) => {
     function changeCount(delta) {
       count += delta;
       document.getElementById('count').textContent = count;
-      localStorage.localStorage.setItem('counter_value', count);
+      localStorage.setItem('counter_value', count);
     }
     
     function resetCount() {
