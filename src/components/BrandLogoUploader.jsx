@@ -1,20 +1,41 @@
 import React, { useState, useRef } from 'react';
 import { Upload, X, Loader, Check, Sparkles } from 'lucide-react';
 import ColorThief from 'colorthief';
+import { jazerNeonTheme } from '../theme/jazerNeonTheme'; // Import jazerNeonTheme
 
-const BrandLogoUploader = ({ onColorsExtracted }) => {
+// Helper functions (could be moved to a utils file if shared)
+const rgbToHex = (r, g, b) => {
+    return '#' + [r, g, b].map(x => {
+        const hex = x.toString(16);
+        return hex.length === 1 ? '0' + hex : hex;
+    }).join('');
+};
+
+const getLuminance = (hex) => {
+    const hexToRgb = (h) => {
+        const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(h);
+        return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
+    };
+    const rgb = hexToRgb(hex);
+    if (!rgb) return 0;
+    const [r, g, b] = [rgb.r, rgb.g, rgb.b].map(val => {
+        val = val / 255;
+        return val <= 0.03928 ? val / 12.92 : Math.pow((val + 0.055) / 1.055, 2.4);
+    });
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
+
+const sortByLuminance = (colors) => {
+    return [...colors].sort((a, b) => getLuminance(a) - getLuminance(b));
+};
+
+const BrandLogoUploader = ({ onColorsExtracted, onLogoUploaded }) => {
     const [uploading, setUploading] = useState(false);
     const [preview, setPreview] = useState(null);
-    const [extractedColors, setExtractedColors] = useState(null);
+    const [extractedTheme, setExtractedTheme] = useState(null); // Changed from extractedColors
+    const [generatedThemes, setGeneratedThemes] = useState([]);
     const fileInputRef = useRef(null);
     const imgRef = useRef(null);
-
-    const rgbToHex = (r, g, b) => {
-        return '#' + [r, g, b].map(x => {
-            const hex = x.toString(16);
-            return hex.length === 1 ? '0' + hex : hex;
-        }).join('');
-    };
 
     const handleFileUpload = async (e) => {
         const file = e.target.files?.[0];
@@ -24,44 +45,125 @@ const BrandLogoUploader = ({ onColorsExtracted }) => {
         const reader = new FileReader();
 
         reader.onload = (event) => {
-            setPreview(event.target.result);
+            const dataUrl = event.target.result;
+            setPreview(dataUrl);
+            onLogoUploaded && onLogoUploaded(dataUrl); // Pass URL up immediately
         };
 
         reader.readAsDataURL(file);
     };
 
-    const extractColors = () => {
+    const generateThemeVariations = (baseExtractedTheme) => {
+        const sortedPalette = sortByLuminance(baseExtractedTheme.palette);
+        const darkest = sortedPalette[0];
+        const lightest = sortedPalette[sortedPalette.length - 1];
+        const primary = baseExtractedTheme.primary;
+        const secondary = baseExtractedTheme.secondary;
+        const accent = baseExtractedTheme.accent;
+
+        const variations = [];
+
+        // Helper to merge extracted colors into jazerNeonTheme structure
+        const createTheme = (overrides, isDarkOverride = null) => {
+            const mergedTheme = {
+                ...jazerNeonTheme, // Start with the full Jazer Neon theme
+                colors: { // Override colors
+                    ...jazerNeonTheme.colors,
+                    primary: primary,
+                    secondary: secondary,
+                    accent: accent,
+                    background: overrides.backgroundColor,
+                    text: overrides.textColor,
+                    palette: baseExtractedTheme.palette, // Keep the full extracted palette
+                },
+                ...overrides, // Apply specific overrides
+            };
+            // Dynamically determine isDark if not explicitly overridden
+            mergedTheme.isDark = isDarkOverride !== null ? isDarkOverride : getLuminance(mergedTheme.colors.background) < 0.5;
+            return mergedTheme;
+        };
+
+        // Variation 1: Vibrant (similar to original primary theme)
+        variations.push(createTheme({
+            id: 'vibrant',
+            name: 'Vibrant',
+            backgroundColor: lightest,
+            textColor: darkest,
+            primaryColor: primary,
+            secondaryColor: secondary,
+            accentColor: accent,
+            panelColor: primary,
+            digitColor: lightest,
+        }));
+
+        // Variation 2: Dark Mode
+        variations.push(createTheme({
+            id: 'dark-mode',
+            name: 'Dark Mode',
+            backgroundColor: darkest,
+            textColor: lightest,
+            primaryColor: primary,
+            secondaryColor: secondary,
+            accentColor: accent,
+            panelColor: darkest,
+            digitColor: lightest,
+        }, true)); // Explicitly set as dark mode
+
+        // Variation 3: Light Mode (subtle version)
+        variations.push(createTheme({
+            id: 'light-mode',
+            name: 'Light Mode',
+            backgroundColor: lightest,
+            textColor: darkest,
+            primaryColor: primary,
+            secondaryColor: secondary,
+            accentColor: accent,
+            panelColor: lightest,
+            digitColor: darkest,
+        }, false)); // Explicitly set as light mode
+        
+        return variations;
+    };
+
+    const extractColorsAndGenerateThemes = () => {
         if (!imgRef.current) return;
 
         const colorThief = new ColorThief();
         try {
-            // Get dominant color and palette
             const dominantColor = colorThief.getColor(imgRef.current);
             const palette = colorThief.getPalette(imgRef.current, 8);
 
             const hexPalette = palette.map(rgb => rgbToHex(rgb[0], rgb[1], rgb[2]));
             const hexDominant = rgbToHex(dominantColor[0], dominantColor[1], dominantColor[2]);
 
-            // Generate a complete theme from extracted colors
-            const theme = {
+            const baseTheme = {
+                ...jazerNeonTheme, // Start with Jazer Neon as base
                 primary: hexDominant,
                 secondary: hexPalette[1] || hexPalette[0],
                 accent: hexPalette[2] || hexPalette[1],
-                background: hexPalette[hexPalette.length - 1], // Lightest color
-                text: hexPalette[0], // Darkest color
-                palette: hexPalette
+                background: hexPalette[hexPalette.length - 1], // Lightest
+                text: hexPalette[0], // Darkest
+                palette: hexPalette,
+                colors: { // Override specific colors in the colors sub-object
+                    ...jazerNeonTheme.colors,
+                    primary: hexDominant,
+                    secondary: hexPalette[1] || hexPalette[0],
+                    accent: hexPalette[2] || hexPalette[1],
+                    // Other colors can be mapped here if desired
+                }
             };
 
-            setExtractedColors(theme);
+            setExtractedTheme(baseTheme); // Store the base extracted theme
+            setGeneratedThemes(generateThemeVariations(baseTheme)); // Generate variations
             setUploading(false);
 
-            // Notify parent component
-            if (onColorsExtracted) {
-                onColorsExtracted(theme);
-            }
+            onColorsExtracted && onColorsExtracted(baseTheme); // Notify parent with base theme
         } catch (error) {
             console.error('Color extraction failed:', error);
             setUploading(false);
+            // Optionally, clear preview if extraction fails consistently
+            setPreview(null);
+            onLogoUploaded && onLogoUploaded(null);
         }
     };
 
@@ -97,14 +199,17 @@ const BrandLogoUploader = ({ onColorsExtracted }) => {
                             ref={imgRef}
                             src={preview}
                             alt="Brand logo"
-                            crossOrigin="anonymous"
-                            onLoad={extractColors}
+                            crossOrigin="anonymous" // Required for ColorThief to work with DataURLs or external images
+                            onLoad={extractColorsAndGenerateThemes} // Call new function
                             className="w-full h-32 object-contain bg-white/5 rounded-lg"
                         />
                         <button
                             onClick={() => {
                                 setPreview(null);
-                                setExtractedColors(null);
+                                setExtractedTheme(null);
+                                setGeneratedThemes([]);
+                                onLogoUploaded && onLogoUploaded(null);
+                                onColorsExtracted && onColorsExtracted(null);
                             }}
                             className="absolute top-2 right-2 p-1 bg-red-500/80 hover:bg-red-500 rounded text-white">
                             <X className="w-4 h-4" />
@@ -118,14 +223,14 @@ const BrandLogoUploader = ({ onColorsExtracted }) => {
                         </div>
                     )}
 
-                    {extractedColors && (
+                    {extractedTheme && (
                         <div className="space-y-2">
                             <div className="flex items-center gap-2 text-xs text-green-400">
                                 <Check className="w-3 h-3" />
                                 Colors extracted successfully!
                             </div>
                             <div className="grid grid-cols-4 gap-2">
-                                {extractedColors.palette.map((color, idx) => (
+                                {extractedTheme.palette.map((color, idx) => (
                                     <div key={idx} className="text-center">
                                         <div
                                             className="w-full h-10 rounded border border-white/20 shadow-lg"
@@ -136,11 +241,32 @@ const BrandLogoUploader = ({ onColorsExtracted }) => {
                                     </div>
                                 ))}
                             </div>
-                            <button
-                                onClick={() => onColorsExtracted && onColorsExtracted(extractedColors)}
+                            
+                            {generatedThemes.length > 0 && (
+                                <div className="mt-4">
+                                    <h5 className="text-xs uppercase tracking-wider text-purple-300 font-semibold mb-2">Theme Variations</h5>
+                                    <div className="flex gap-2 justify-center">
+                                        {generatedThemes.map(theme => (
+                                            <button
+                                                key={theme.id}
+                                                onClick={() => onColorsExtracted && onColorsExtracted(theme)}
+                                                className="flex flex-col items-center p-2 rounded-lg border border-purple-500/30 hover:border-purple-500 transition-colors"
+                                                title={`Apply ${theme.name} Theme`}
+                                            >
+                                                <div className="w-12 h-6 rounded-md mb-1" style={{ background: theme.backgroundColor, border: `1px solid ${theme.primaryColor}` }}></div>
+                                                <span className="text-[10px] text-white/70">{theme.name}</span>
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Original Apply button, can be kept or removed if variations are sufficient */}
+                            {/* <button
+                                onClick={() => onColorsExtracted && onColorsExtracted(extractedTheme)}
                                 className="w-full mt-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors">
-                                Apply Colors to Widget
-                            </button>
+                                Apply Original Extracted Colors
+                            </button> */}
                         </div>
                     )}
                 </div>
@@ -149,4 +275,4 @@ const BrandLogoUploader = ({ onColorsExtracted }) => {
     );
 };
 
-export default BrandLogoUploader;
+export { BrandLogoUploader };
