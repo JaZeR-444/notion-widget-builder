@@ -5,7 +5,7 @@ import {
   Clock, Quote, Hash, ImageIcon, BarChart3, Hourglass, 
   MousePointerClick, CloudSun
 } from 'lucide-react';
-import BrandLogoUploader from './BrandLogoUploader';
+import { BrandLogoUploader } from './BrandLogoUploader';
 import { generateBrandPresets } from '../utils/brandThemeGenerator';
 
 const JAZER_BRAND = {

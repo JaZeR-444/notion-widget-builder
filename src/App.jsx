@@ -14,38 +14,38 @@ import {
 } from 'lucide-react';
 import ColorThief from 'colorthief';
 
-import { counterConfig } from './widgets/counter/config';
-import { CounterWidget } from './widgets/counter/CounterWidget';
-import { generateCounterHTML, generateCounterScript } from './widgets/counter/export';
+import { counterConfig } from './widgets/counter-widget/config';
+import { CounterWidget } from './widgets/counter-widget/CounterWidget';
+import { generateHTML as generateCounterHTML, generateScript as generateCounterScript } from './widgets/counter-widget/export';
 
-import { imageGalleryConfig } from './widgets/imageGallery/config';
-import { ImageGalleryWidget } from './widgets/imageGallery/ImageGalleryWidget';
-import { generateImageGalleryHTML, generateImageGalleryScript } from './widgets/imageGallery/export';
+import { imageGalleryConfig } from './widgets/image-gallery-widget/config';
+import { ImageGalleryWidget } from './widgets/image-gallery-widget/ImageGalleryWidget';
+import { generateHTML as generateImageGalleryHTML, generateScript as generateImageGalleryScript } from './widgets/image-gallery-widget/export';
 
-import { quotesConfig } from './widgets/quotes/config';
-import { QuotesWidget } from './widgets/quotes/QuotesWidget';
-import { generateQuotesHTML, generateQuotesScript } from './widgets/quotes/export';
+import { quotesConfig } from './widgets/quotes-widget/config';
+import { QuotesWidget } from './widgets/quotes-widget/QuotesWidget';
+import { generateHTML as generateQuotesHTML, generateScript as generateQuotesScript } from './widgets/quotes-widget/export';
 
-import { weatherConfig } from './widgets/weather/config';
-import { WeatherWidget } from './widgets/weather/WeatherWidget';
-import { generateWeatherHTML, generateWeatherScript } from './widgets/weather/export';
+import { weatherConfig } from './widgets/weather-widget/config';
+import { WeatherWidget } from './widgets/weather-widget/WeatherWidget';
+import { generateWeatherHTML, generateWeatherScript } from './widgets/weather-widget/export';
 
-import { lifeProgressConfig } from './widgets/lifeProgress/config';
-import { LifeProgressWidget } from './widgets/lifeProgress/LifeProgressWidget';
-import { generateLifeProgressHTML, generateLifeProgressScript } from './widgets/lifeProgress/export';
+import { lifeProgressConfig } from './widgets/life-progress-bar-widget/config';
+import { LifeProgressWidget } from './widgets/life-progress-bar-widget/LifeProgressWidget';
+import { generateHTML as generateLifeProgressHTML, generateScript as generateLifeProgressScript } from './widgets/life-progress-bar-widget/export';
 
-import { clockConfig } from './widgets/clock/config';
-import { ClockWidget } from './widgets/clock/ClockWidget';
-import { generateClockHTML, generateClockScript } from './widgets/clock/export';
+import { clockConfig } from './widgets/clock-widget/config';
+import { ClockWidget } from './widgets/clock-widget/ClockWidget';
+import { generateClockHTML, generateClockScript } from './widgets/clock-widget/export';
 
-import { countdownConfig } from './widgets/Countdown/config';
-import { CountdownWidget } from './widgets/Countdown/CountdownWidget';
-import { generateCountdownHTML, generateCountdownScript } from './widgets/Countdown/export';
+import { countdownConfig } from './widgets/countdown-widget/config';
+import { CountdownWidget } from './widgets/countdown-widget/CountdownWidget';
+import { generateHTML as generateCountdownHTML, generateScript as generateCountdownScript } from './widgets/countdown-widget/export';
 
 // Button generator - named import
-import { newButtonGenerator } from './widgets/newButtonGenerator/ButtonGeneratorWidget';
+import { ButtonGeneratorWidget } from './widgets/new-button-generator-widget/ButtonGeneratorWidget';
 
-import BrandLogoUploader from './components/BrandLogoUploader';
+import { BrandLogoUploader } from './components/BrandLogoUploader';
 import BrandThemeGenerator from './components/BrandThemeGenerator';
 
 // --- CONSTANTS & CONFIG ---
