@@ -44,6 +44,8 @@ import { generateHTML as generateCountdownHTML, generateScript as generateCountd
 
 // Button generator - named import
 import { ButtonGeneratorWidget } from './widgets/new-button-generator-widget/ButtonGeneratorWidget';
+import { newButtonGeneratorConfig } from './widgets/new-button-generator-widget/config';
+import { generateHTML as generateButtonHTML, generateScript as generateButtonScript } from './widgets/new-button-generator-widget/export';
 
 import { BrandLogoUploader } from './components/BrandLogoUploader';
 import BrandThemeGenerator from './components/BrandThemeGenerator';
@@ -1101,7 +1103,13 @@ const WIDGET_REGISTRY = {
     generateHTML: generateImageGalleryHTML,
     generateScript: generateImageGalleryScript
   },
-  newButtonGenerator: newButtonGenerator, // Added new button generator
+  newButtonGenerator: {
+    ...newButtonGeneratorConfig,
+    icon: <MousePointerClick className="w-4 h-4" />,
+    Component: ButtonGeneratorWidget,
+    generateHTML: generateButtonHTML,
+    generateScript: generateButtonScript
+  },
   quotes: {
     ...quotesConfig,
     icon: <Quote className="w-4 h-4" />,
