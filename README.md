@@ -4,7 +4,7 @@
 
 ### *Cyberpunk-Powered Widget Creation for Notion*
 
-[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-notion.jazer--music.com-8B5CF6?style=for-the-badge)](https://notion.jazer-music.com)
+[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-jazer--444.github.io-8B5CF6?style=for-the-badge)](https://jazer-444.github.io/notion-widget-builder/)
 [![License](https://img.shields.io/badge/License-MIT-F59E0B?style=for-the-badge)](./LICENSE)
 
 [![React 19](https://img.shields.io/badge/React-19.2.0-61DAFB?style=flat&logo=react)](https://react.dev/)
@@ -102,7 +102,7 @@ npm run lint
 npm run deploy
 ```
 
-> **Note:** The app is configured for deployment at `notion.jazer-music.com`. Update `base` in `vite.config.js` for custom domains.
+> **Note:** The app is configured for GitHub Pages deployment at `https://jazer-444.github.io/notion-widget-builder/`. Update `base` in `vite.config.js` for custom domains.
 
 ---
 
@@ -428,7 +428,7 @@ Upload any logo and automatically extract **8 brand-consistent color presets**:
 ### Build Configuration
 
 **Vite** (`vite.config.js`):
-- Base path: `/` (custom domain: notion.jazer-music.com)
+- Base path: `/` (custom domain: jazer-444.github.io/notion-widget-builder)
 - Code splitting: React vendor chunk + icon chunk optimization
 - Dev server: Port 3000 with auto-open browser
 - Output: `dist/` with optimized assets
@@ -538,7 +538,7 @@ All widgets follow a **modular three-file pattern**:
 ### Build Configuration
 
 **Vite** (`vite.config.js`):
-- Base path: `/` (custom domain: notion.jazer-music.com)
+- Base path: `/` (custom domain: jazer-444.github.io/notion-widget-builder)
 - Code splitting: React vendor chunk + icon chunk optimization
 - Dev server: Port 3000 with auto-open browser
 - Output: `dist/` with optimized assets
@@ -642,7 +642,7 @@ The repository includes automated CI/CD via GitHub Actions:
 Trigger: Push to 'master' branch (or manual dispatch)
 Build: Node 20 → npm ci → npm run build
 Deploy: dist/ → GitHub Pages (gh-pages branch)
-Custom Domain: notion.jazer-music.com
+Custom Domain: https://jazer-444.github.io/notion-widget-builder/
 ```
 
 **Location**: `.github/workflows/deploy.yml`
@@ -713,9 +713,9 @@ Update `vite.config.js` for custom domains:
 
 ```js
 export default defineConfig({
-  base: '/',  // For custom domain (notion.jazer-music.com)
+  base: '/notion-widget-builder/',  // For GitHub Pages
   // OR
-  base: '/repo-name/',  // For GitHub Pages without custom domain
+  base: '/',  // For custom domain
 });
 ```
 
@@ -819,7 +819,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 *Cyberpunk Aesthetics & Innovation*
 
 [![Website](https://img.shields.io/badge/🌐_Website-jazer--music.com-8B5CF6?style=for-the-badge)](https://jazer-music.com)
-[![Notion Widgets](https://img.shields.io/badge/🎨_Widgets-notion.jazer--music.com-3B82F6?style=for-the-badge)](https://notion.jazer-music.com)
+[![Notion Widgets](https://img.shields.io/badge/🎨_Widgets-GitHub_Pages-3B82F6?style=for-the-badge)](https://jazer-444.github.io/notion-widget-builder/)
 
 </div>
 
@@ -886,7 +886,7 @@ Open an issue on GitHub with detailed description, steps to reproduce, and scree
 
 ### 🚀 Ready to Build?
 
-**[Launch Builder](https://notion.jazer-music.com)** • **[View Docs](./BRAND_GUIDELINES.md)** • **[Report Issue](https://github.com/yourusername/notion-widget-builder/issues)**
+**[Launch Builder](https://jazer-444.github.io/notion-widget-builder/)** • **[View Docs](./BRAND_GUIDELINES.md)** • **[Report Issue](https://github.com/JaZeR-444/notion-widget-builder/issues)**
 
 ---
 
