@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="./public/assets/branding/app-logo.svg" alt="Notion Widget Builder Logo" width="400" />
+
 # ⚡ JaZeR Notion Widget Builder
 
 ### *Cyberpunk-Powered Widget Creation for Notion*
@@ -814,6 +816,8 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 ## 👤 Author
 
 <div align="center">
+
+<img src="./public/assets/branding/app-icon.svg" alt="JaZeR Icon" width="80" />
 
 **JaZeR**  
 *Cyberpunk Aesthetics & Innovation*
