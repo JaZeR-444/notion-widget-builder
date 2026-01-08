@@ -140,9 +140,9 @@ const JAZER_BRAND = {
     minWidthPrint: 30, // mm - print minimum
     clearSpace: '1em', // Padding equal to height of "J"
     paths: {
-      svg: '/images/JaZeR BrandKit_OnSite/Logo_Primary_Full-Color.svg',
-      gif: '/images/JaZeR_Logo_OFFICIAL.gif',
-      favicon: '/images/JaZeR BrandKit_OnSite/favicon.svg'
+      svg: '/assets/branding/app-logo.svg',
+      gif: '/assets/branding/app-logo.svg',
+      favicon: '/assets/branding/app-icon.svg'
     }
   }
 };
@@ -1421,12 +1421,10 @@ function WidgetLandingPage({ onSelect, onBrandGenerator }) {
     <div className="min-h-screen p-8 md:p-16 flex flex-col items-center" style={{ backgroundColor: 'var(--jazer-night-black)', color: 'var(--jazer-stardust-white)' }}>
       <div className="max-w-6xl w-full space-y-12">
         <div className="text-center space-y-4">
-          <div className="inline-flex items-center justify-center p-3 rounded-full mb-4 animate-pulse-neon" style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', border: '1px solid var(--jazer-electric-purple)' }}>
-            <Layout className="w-8 h-8" style={{ color: 'var(--jazer-electric-purple)' }} />
+          <div className="inline-flex items-center justify-center mb-6 animate-pulse-neon">
+            <img src="/assets/branding/app-icon.svg" className="w-20 h-20 drop-shadow-[0_0_15px_rgba(139,92,246,0.5)]" alt="Notion Widget Builder Icon" />
           </div>
-          <h1 className="text-5xl md:text-6xl font-black tracking-tight gradient-text neon-text" style={{ fontFamily: 'Orbitron, sans-serif' }}>
-            NOTION WIDGETS
-          </h1>
+          <img src="/assets/branding/app-logo.svg" alt="Notion Widget Builder" className="h-16 md:h-24 mx-auto mb-4 drop-shadow-[0_0_10px_rgba(139,92,246,0.5)]" />
           <p className="text-xl max-w-2xl mx-auto" style={{ color: 'var(--jazer-soft-slate)' }}>
             Premium, customizable widgets for your Notion workspace. <span style={{ color: 'var(--jazer-neon-pink)' }}>Cyberpunk aesthetics included.</span>
           </p>
@@ -1654,7 +1652,7 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme }) {
         <div className="p-4" style={{ borderBottom: '1px solid var(--jazer-soft-slate)' }}>
           <button aria-label="Navigate back to home" onClick={onBack} className="flex items-center gap-2 text-xs font-bold mb-4 uppercase tracking-wider" style={{ color: 'var(--jazer-soft-slate)' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--jazer-electric-purple)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--jazer-soft-slate)'}><ArrowLeft className="w-3 h-3" /> Back to Home</button>
           <h1 className="text-lg font-bold flex items-center gap-2 gradient-text neon-text">
-            <Layout className="w-5 h-5" style={{ color: 'var(--jazer-electric-purple)' }} /> Builder
+            <img src="/assets/branding/app-icon.svg" alt="Icon" className="w-6 h-6 drop-shadow-[0_0_5px_rgba(139,92,246,0.5)]" /> Builder
           </h1>
         </div>
         <nav className="flex-1 overflow-y-auto p-2 space-y-1">
