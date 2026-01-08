@@ -1,23 +1,21 @@
 <div align="center">
 
-<img src="./public/assets/branding/app-logo.svg" alt="Notion Widget Builder Logo" width="400" />
+<img src="./Notion Widget Builder Logo.svg" alt="Notion Widget Builder Logo" width="400" />
 
-# ⚡ JaZeR Notion Widget Builder
+# 🎨 Notion Widget Builder
 
-### *Cyberpunk-Powered Widget Creation for Notion*
+### *Transform Your Notion Workspace with Beautiful, Custom Widgets*
 
-[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-jazer--444.github.io-8B5CF6?style=for-the-badge)](https://jazer-444.github.io/notion-widget-builder/)
+[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Launch_Builder-8B5CF6?style=for-the-badge)](https://jazer-444.github.io/notion-widget-builder/)
 [![License](https://img.shields.io/badge/License-MIT-F59E0B?style=for-the-badge)](./LICENSE)
+[![Made with React](https://img.shields.io/badge/Made_with-React_19-61DAFB?style=for-the-badge&logo=react)](https://react.dev/)
 
-[![React 19](https://img.shields.io/badge/React-19.2.0-61DAFB?style=flat&logo=react)](https://react.dev/)
-[![Vite](https://img.shields.io/badge/Vite-7.2.5-646CFF?style=flat&logo=vite)](https://vitejs.dev/)
-[![TailwindCSS](https://img.shields.io/badge/Tailwind-3.4.18-38BDF8?style=flat&logo=tailwindcss)](https://tailwindcss.com/)
-[![Brand Compliant](https://img.shields.io/badge/Brand-JaZeR_Certified-8B5CF6?style=flat)](./BRAND_GUIDELINES.md)
+<img src="./Notion Widget Builder Icon (100 x 100 px).svg" alt="App Icon" width="100" />
 
-**Create stunning, fully customizable widgets with official JaZeR branding.**  
-Visual builder • Real-time preview • Standalone exports • Zero dependencies
+**A powerful visual builder for creating stunning, fully customizable Notion widgets.**  
+No coding required • Real-time preview • One-click export • Works anywhere
 
-[Features](#-features) • [Quick Start](#-quick-start) • [Widgets](#-widget-catalog) • [Documentation](#-documentation) • [Deploy](#-deployment)
+[✨ Features](#-features) • [🚀 Quick Start](#-quick-start) • [📦 Widgets](#-widget-catalog) • [🎯 Usage Guide](#-how-to-use) • [🛠️ Tech Stack](#️-tech-stack)
 
 </div>
 
@@ -25,40 +23,33 @@ Visual builder • Real-time preview • Standalone exports • Zero dependencie
 
 ## ✨ Features
 
-<table>
-<tr>
-<td width="50%">
+### 🎨 **Visual Builder Interface**
+- ⚡ **Real-time Preview** - See your widget update instantly as you customize
+- 📐 **Resizable Canvas** - Test at any size before exporting
+- 🎛️ **Intuitive Controls** - Easy-to-use configuration panels for every widget
+- 🌈 **Smart Color Picker** - Brand presets + custom palette support
+- 💾 **Auto-save Settings** - Never lose your work
 
-### 🎨 **Visual Builder**
-- **Real-time Preview** - See changes instantly as you customize
-- **Resizable Canvas** - Test widgets at any size
-- **Interactive Config Panel** - Intuitive controls for all settings
-- **Live Color Picker** - JaZeR brand colors + custom palette support
+### 🚀 **Export & Integration**
+- 📥 **One-Click Download** - Get standalone HTML files ready to host
+- 📋 **Copy to Clipboard** - Instant code copy for quick embedding
+- 🌐 **Universal Compatibility** - Works in Notion, websites, blogs, anywhere
+- 🎯 **Zero Dependencies** - Fully self-contained (except Google Fonts CDN)
+- 🔗 **Multiple Hosting Options** - GitHub Pages, Vercel, Netlify, and more
 
-### 🚀 **Export & Deploy**
-- **Standalone HTML** - Zero dependencies (except fonts)
-- **Copy Code** - Instant clipboard copy for quick embedding
-- **Download File** - Ready-to-host HTML files
-- **Universal Compatibility** - Works in Notion, websites, anywhere
+### 🌟 **Smart Brand System**
+- 🎨 **Logo Color Extraction** - Upload any logo, auto-extract 8-color theme
+- 🌈 **10-Color Neon Palette** - Official JaZeR cyberpunk brand colors
+- 🎭 **8 Auto Presets** - Monochrome, Contrast, Vibrant, Professional, Dark, Light, Neon, Minimal
+- 🌓 **Intelligent Theme Switching** - System-aware light/dark mode support
+- 💎 **Custom Color Palettes** - Full control over every color element
 
-</td>
-<td width="50%">
-
-### 🌈 **Brand System**
-- **JaZeR Neon Theme** - Official 10-color cyberpunk palette
-- **Logo Upload** - Extract brand colors from any image (ColorThief)
-- **8 Auto Presets** - Monochrome, Contrast, Vibrant, Professional, Dark, Light, Neon, Minimal
-- **Light/Dark Modes** - System-aware theme switching
-
-### 🎯 **Widget Features**
-- **8 Widget Types** - From clocks to galleries to life trackers
-- **Fully Customizable** - Colors, fonts, sizes, effects, animations
-- **Responsive** - Mobile, tablet, desktop optimized
-- **Accessible** - WCAG AA compliant with focus states
-
-</td>
-</tr>
-</table>
+### 🎯 **Widget Capabilities**
+- 📦 **8+ Widget Types** - Clocks, weather, galleries, counters, and more
+- ⚙️ **Fully Customizable** - Control colors, fonts, sizes, effects, animations
+- 📱 **Responsive Design** - Automatically adapts to mobile, tablet, and desktop
+- ♿ **Accessibility First** - WCAG AA compliant with keyboard navigation
+- ✨ **Visual Effects** - Neon glows, gradients, glassmorphism, animations
 
 ---
 
@@ -110,307 +101,246 @@ npm run deploy
 
 ## 📦 Widget Catalog
 
-<table>
-<tr>
-<td width="25%" align="center">
+### ⏰ Clock Widget
+**The Ultimate Time Display**
+- 🕐 **12+ Display Styles** - Analog, digital, flip, minimalist, and more
+- 🌍 **Timezone Support** - Show time for any location worldwide
+- ⏱️ **Timer & Stopwatch** - Built-in productivity tools
+- 🎨 **Custom Fonts** - Choose from Google Fonts library
+- ⚙️ **Full Customization** - Colors, sizes, formats (12/24hr)
 
-### ⏰ Clock
-Multiple display styles  
-Analog • Digital • Flip  
-Timezone support  
-Custom fonts & colors
+### 🌤️ Weather Widget
+**Real-time Weather Information**
+- 🌡️ **Current Conditions** - Temperature, humidity, wind speed, pressure
+- 📅 **7-Day Forecast** - Plan ahead with extended forecasts
+- 📍 **Location-Based** - Automatic geolocation or manual city search
+- 🌅 **Sunrise/Sunset** - Golden hour times included
+- 🎨 **4 Layout Styles** - Compact, detailed, card, and minimal views
+- 🌐 **Open-Meteo API** - Free, accurate weather data
 
-</td>
-<td width="25%" align="center">
+### ⏳ Countdown Widget
+**Event Countdown Timer**
+- 📆 **Custom Target Dates** - Count down to any date and time
+- 🎉 **Confetti Effect** - Celebrate when countdown reaches zero
+- 🔄 **Past Date Handling** - Automatically switches to "time since" mode
+- 💫 **Flip Animation** - Smooth, animated number transitions
+- 🏷️ **Custom Labels** - Personalize days/hours/minutes/seconds text
 
-### ⏳ Countdown
-Event countdowns  
-Custom date/time targets  
-Label customization  
-Days/Hours/Minutes/Seconds
+### 🔢 Counter Widget
+**Simple Number Tracker**
+- ➕➖ **Increment/Decrement** - Track any number up or down
+- 🎯 **Min/Max Limits** - Set boundaries for your counter
+- 🔄 **Reset Function** - Quick return to starting value
+- 📊 **Step Values** - Count by 1s, 5s, 10s, or any custom amount
+- 🎨 **Goal Progress** - Visual progress bar towards target
 
-</td>
-<td width="25%" align="center">
+### 🖼️ Image Gallery Widget
+**Beautiful Image Showcase**
+- 🎭 **Multiple Layouts** - Grid, carousel, masonry styles
+- 🔍 **Lightbox View** - Full-screen image viewing
+- 📝 **Caption Support** - Add descriptions to each image
+- 🎨 **Customizable Spacing** - Control gaps and padding
+- 🖼️ **Unlimited Images** - Add as many images as needed
 
-### 🔢 Counter
-Number tracking  
-Increment/Decrement  
-Min/Max values  
-Goal progress display
+### 💬 Quotes Widget
+**Inspirational Quote Display**
+- 📚 **Custom Quote Lists** - Add your own motivational quotes
+- 🔄 **Auto-rotation** - Automatically cycle through quotes
+- 🌐 **API Integration** - Optional fetch from quote APIs
+- ✨ **Beautiful Typography** - Eye-catching text styling
+- 🎨 **Author Display** - Show quote sources
 
-</td>
-<td width="25%" align="center">
+### 🔘 Button Generator Widget
+**Custom Styled Buttons**
+- 🎨 **Multiple Styles** - Solid, outline, neon glow effects
+- 😀 **Emoji Support** - Add icons to buttons
+- 🔗 **Action Links** - Link buttons to any URL
+- ✨ **Hover Effects** - Interactive animations on mouse-over
+- 🌈 **Color Presets** - Quick styling with brand colors
 
-### 🌤️ Weather
-Current conditions  
-Multi-day forecasts  
-Location-based  
-Custom units (°C/°F)
+### 📊 Life Progress Bar Widget
+**Visual Time Tracker**
+- 📅 **Multiple Time Periods** - Year, month, week, day progress
+- 📈 **Progress Bars** - Visual representation of time passing
+- 💪 **Motivational Display** - Encourages making the most of your time
+- 🎯 **Customizable Metrics** - Choose which time periods to track
 
-</td>
-</tr>
-<tr>
-<td width="25%" align="center">
-
-### 🖼️ Image Gallery
-Multiple layouts  
-Grid • Carousel • Masonry  
-Lightbox support  
-Caption overlay
-
-</td>
-<td width="25%" align="center">
-
-### 💬 Quotes
-Inspirational quotes  
-Auto-rotation  
-Custom quote sets  
-Beautiful typography
-
-</td>
-<td width="25%" align="center">
-
-### 📊 Life Progress
-Time visualization  
-Year/Month/Week/Day  
-Progress bars  
-Motivational display
-
-</td>
-<td width="25%" align="center">
-
-### 🔘 Button Generator
-Custom styled buttons  
-Hover effects  
-Action links  
-Neon glow animations
-
-</td>
-</tr>
-</table>
-
-### Widget Capabilities
-
-All widgets support:
-- ✅ **Light/Dark Mode** - Automatic system detection or manual override
-- ✅ **Brand Themes** - Apply JaZeR neon theme or custom logo colors
-- ✅ **Responsive Sizing** - Container queries for adaptive layouts
-- ✅ **Background Textures** - Stars, noise, dots, grid, waves (SVG/CSS)
-- ✅ **Export Formats** - Standalone HTML with inline styles
-- ✅ **Zero Dependencies** - Self-contained (except Google Fonts CDN)
+### All Widgets Include:
+✅ **Light/Dark Mode** - Automatic system detection or manual toggle  
+✅ **Brand Themes** - Apply JaZeR colors or your own logo palette  
+✅ **Responsive Sizing** - Adapts to any screen size  
+✅ **Background Textures** - Stars, noise, dots, grid, waves  
+✅ **Export Ready** - One-click HTML download  
+✅ **Zero Dependencies** - Self-contained and lightweight
 
 ---
 
-## 🎯 How to Use in Notion
+## 🎯 How to Use
 
-### Step 1: Build Your Widget
+### Getting Started in 3 Steps
 
-1. **Select Widget Type** - Choose from 8 available widget types on the landing page
-2. **Customize Settings** - Use the configuration panel to adjust:
-   - Colors (brand presets or custom picker)
-   - Typography (fonts, sizes, weights)
-   - Layout (sizes, spacing, alignment)
-   - Effects (glow, gradients, shadows)
-   - Widget-specific features
-3. **Live Preview** - See real-time changes in the preview panel
-4. **Upload Brand Logo** (Optional) - Auto-extract 8 colors and apply themed presets
+#### 1️⃣ Build Your Widget
+1. **Choose a Widget** - Select from 8+ widget types
+2. **Customize Everything** - Use intuitive controls to adjust:
+   - 🎨 Colors (brand presets or custom)
+   - 📝 Typography (fonts, sizes, weights)
+   - 📐 Layout (dimensions, spacing, alignment)
+   - ✨ Effects (glows, gradients, shadows)
+   - ⚙️ Widget-specific features
+3. **Preview in Real-time** - See changes instantly
+4. **(Optional)** Upload your logo to auto-extract brand colors
 
-### Step 2: Export Widget
+#### 2️⃣ Export Your Widget
+Choose your preferred method:
+- **📥 Download HTML** - Get a standalone `.html` file
+- **📋 Copy Code** - Copy to clipboard for quick paste
 
-Choose your export method:
+#### 3️⃣ Host & Embed
 
-| Method | Description | Use Case |
-|--------|-------------|----------|
-| **📥 Download HTML** | Get standalone `.html` file | Self-hosting, full control |
-| **📋 Copy Code** | Copy HTML to clipboard | Quick embed, paste anywhere |
+**Quick Hosting Options:**
 
-### Step 3: Host Your Widget
+<details>
+<summary><b>📘 GitHub Pages (Free, Recommended)</b></summary>
 
-#### Option A: GitHub Pages (Free, Recommended)
 ```bash
-# Create a new repository on GitHub
+# Create new repository on GitHub
 git init
-git add widget.html
-git commit -m "Add widget"
+git add your-widget.html
+git commit -m "Add Notion widget"
 git branch -M main
-git remote add origin https://github.com/yourusername/your-repo.git
+git remote add origin https://github.com/yourusername/notion-widgets.git
 git push -u origin main
 
-# Enable GitHub Pages in repository settings
-# Your widget will be live at: https://yourusername.github.io/your-repo/widget.html
+# Enable GitHub Pages in Settings → Pages → Source: main branch
+# Your widget URL: https://yourusername.github.io/notion-widgets/your-widget.html
 ```
+</details>
 
-#### Option B: Vercel (Fastest)
+<details>
+<summary><b>⚡ Vercel (Fastest Deployment)</b></summary>
+
 ```bash
 npm i -g vercel
 vercel --prod
-# Paste the deployment URL in Notion
+# Get instant URL
 ```
+</details>
 
-#### Option C: Netlify Drop
+<details>
+<summary><b>🎨 Netlify Drop (No CLI)</b></summary>
+
 1. Go to [app.netlify.com/drop](https://app.netlify.com/drop)
 2. Drag & drop your HTML file
 3. Get instant public URL
+</details>
 
-#### Option D: Direct HTML (Simple Pages)
-Host on any static server: Firebase, Surge, Cloudflare Pages, etc.
+<details>
+<summary><b>🔥 Other Options</b></summary>
 
-### Step 4: Embed in Notion
+- **Firebase Hosting**: `firebase deploy`
+- **Cloudflare Pages**: `npx wrangler pages deploy`
+- **Surge**: `surge your-widget.html`
+- **AWS S3**: Upload to S3 bucket with public access
+</details>
 
-1. **Open your Notion page**
-2. **Type `/embed`** and press Enter
-3. **Paste your widget URL** (e.g., `https://yourusername.github.io/repo/widget.html`)
-4. **Resize the embed block** to fit your design
-5. **Done!** Your widget is now live in Notion 🎉
+#### 4️⃣ Add to Notion
+
+1. Open your Notion page
+2. Type `/embed` and press Enter
+3. Paste your widget URL
+4. Resize the embed block to fit
+5. 🎉 Done!
 
 ### 💡 Pro Tips
 
-- **Resize Widget Canvas**: Test different sizes in the builder before exporting
-- **Use Brand Presets**: Upload your logo once, get 8 themed variations instantly
-- **Dark Mode**: Enable appearance mode for automatic light/dark switching
-- **Responsive Sizing**: Enable container queries for adaptive scaling in Notion
-- **Multiple Widgets**: Create a single HTML file with multiple widgets for organization
+- **🎨 Brand Consistency**: Upload your logo once to generate 8 themed color variations
+- **📐 Test Sizes**: Use the resizable canvas to preview at different dimensions
+- **🌓 Dark Mode**: Enable automatic theme switching for day/night compatibility
+- **🔄 Updates**: Re-export and replace the hosted file to update your widget
+- **📱 Mobile**: All widgets are responsive and mobile-optimized
+- **♿ Accessibility**: Widgets include keyboard navigation and screen reader support
 
 ---
 
-## 🎨 JaZeR Brand System
+## 🛠️ Tech Stack
 
-The application fully implements the official JaZeR cyberpunk brand identity with neon aesthetics, futuristic typography, and a vibrant 10-color palette.
+Built with modern, cutting-edge technologies for optimal performance and developer experience.
 
-### Color Palette
+### Core Framework
+- ⚛️ **React 19.2.0** - Latest React with improved performance and concurrent features
+- ⚡ **Vite 7.2.5 (Rolldown)** - Lightning-fast build tool with next-gen bundler
+- 🎨 **TailwindCSS 3.4.18** - Utility-first CSS framework for rapid UI development
 
-<table>
-<tr>
-<th>Category</th>
-<th>Color</th>
-<th>Hex</th>
-<th>Usage</th>
-</tr>
-<tr>
-<td rowspan="2"><b>Primary</b></td>
-<td>🟣 <b>Electric Purple</b></td>
-<td><code>#8B5CF6</code></td>
-<td>Headings, primary CTAs, brand anchor</td>
-</tr>
-<tr>
-<td>🔵 <b>Cosmic Blue</b></td>
-<td><code>#3B82F6</code></td>
-<td>Links, interactive elements, secondary brand</td>
-</tr>
-<tr>
-<td rowspan="2"><b>Accent</b></td>
-<td>🩷 <b>Neon Pink</b></td>
-<td><code>#EC4899</code></td>
-<td>Highlights, attention elements, hover states</td>
-</tr>
-<tr>
-<td>🟡 <b>Sunburst Gold</b></td>
-<td><code>#F59E0B</code></td>
-<td>Warnings, alerts, call-to-action emphasis</td>
-</tr>
-<tr>
-<td rowspan="2"><b>Support</b></td>
-<td>🩵 <b>Aether Teal</b></td>
-<td><code>#06B6D4</code></td>
-<td>Accents on dark backgrounds, info states</td>
-</tr>
-<tr>
-<td>🟣 <b>Ultraviolet</b></td>
-<td><code>#A78BFA</code></td>
-<td>Secondary buttons, subtle highlights</td>
-</tr>
-<tr>
-<td rowspan="4"><b>Neutrals</b></td>
-<td>⚫ <b>Night Black</b></td>
-<td><code>#0B0E12</code></td>
-<td>Default background, dark surfaces</td>
-</tr>
-<tr>
-<td>⚪ <b>Stardust White</b></td>
-<td><code>#F8F9FF</code></td>
-<td>Default text, light mode backgrounds</td>
-</tr>
-<tr>
-<td>⬛ <b>Graphite</b></td>
-<td><code>#1F2937</code></td>
-<td>Cards, panels, UI elements</td>
-</tr>
-<tr>
-<td>🔘 <b>Soft Slate</b></td>
-<td><code>#94A3B8</code></td>
-<td>Captions, disabled states, borders</td>
-</tr>
-</table>
+### UI & Interactions
+- 🎯 **Lucide React 0.554.0** - Beautiful, customizable icon library (1000+ icons)
+- 🌈 **ColorThief 2.6.0** - Intelligent color extraction from images using k-means clustering
+- 🆔 **nanoid 5.1.6** - Tiny, secure URL-friendly unique ID generator
 
-### Typography
+### APIs & Data
+- 🌤️ **Open-Meteo API** - Free, accurate weather data with no API key required
+- 📍 **Geolocation API** - Browser-native location detection
 
-| Font | Usage | Weights | Features |
-|------|-------|---------|----------|
-| **Orbitron** | Headings, Titles, Widget Labels | 400, 700 | +3% letter-spacing, Futuristic |
-| **Montserrat** | Body, UI Text, Descriptions | 400, 500, 700 | Readable, Clean |
+### Development Tools
+- 📝 **ESLint 9.x** - Code quality with modern flat config format
+- 🔧 **PostCSS + Autoprefixer** - Automatic CSS vendor prefixing
+- 🎨 **PropTypes** - Runtime type checking for React props
 
-### Visual Effects
+### Architecture Highlights
 
-```css
-/* Neon Glow */
-text-shadow: 0 0 4px rgba(139, 92, 246, 0.6);
-
-/* Full Spectrum Gradient */
-background: linear-gradient(135deg, 
-  #8B5CF6 0%,    /* Electric Purple */
-  #3B82F6 25%,   /* Cosmic Blue */
-  #06B6D4 50%,   /* Aether Teal */
-  #EC4899 75%,   /* Neon Pink */
-  #F59E0B 100%   /* Sunburst Gold */
-);
-
-/* Purple-Blue Gradient */
-background: linear-gradient(135deg, #8B5CF6 0%, #3B82F6 100%);
+```
+📁 Project Structure
+├── src/
+│   ├── widgets/          # 8+ modular widget implementations
+│   │   ├── clock-widget/
+│   │   │   ├── config.js          # Configuration schema
+│   │   │   ├── ClockWidget.jsx    # React preview component
+│   │   │   └── export.js          # Standalone HTML generator
+│   │   ├── weather-widget/
+│   │   ├── countdown-widget/
+│   │   └── ...
+│   ├── theme/            # Brand system & design tokens
+│   │   └── jazerNeonTheme.js
+│   ├── contexts/         # React Context providers
+│   │   └── ThemeContext.jsx
+│   ├── utils/            # Helper functions
+│   │   └── brandThemeGenerator.js
+│   ├── components/       # Reusable UI components
+│   └── App.jsx           # Main application
+├── public/               # Static assets
+└── dist/                 # Production build output
 ```
 
-### Usage in Code
+### Widget Architecture Pattern
 
-```jsx
-// Tailwind CSS Classes
-<h1 className="font-heading text-6xl bg-jazer-gradient-purple-blue bg-clip-text text-transparent">
-<button className="bg-jazer-electric-purple shadow-neon-purple hover:shadow-neon-pink">
-<div className="bg-jazer-night-black text-jazer-stardust-white">
+Every widget follows a consistent **three-file modular pattern**:
 
-// CSS Variables
-<div style={{ 
-  color: 'var(--jazer-cosmic-blue)',
-  textShadow: 'var(--jazer-neon-glow-purple)'
-}}>
+1. **`config.js`** - Schema & defaults
+   - Widget metadata (id, label, description)
+   - Default configuration values
+   - Field definitions for UI controls
+   - Brand theme integration
 
-// JavaScript Constants
-import { jazerNeonTheme } from './theme/jazerNeonTheme';
-const color = jazerNeonTheme.colors.electricPurple;
-const gradient = jazerNeonTheme.gradients.purpleBlue;
-```
+2. **`Widget.jsx`** - React preview
+   - Live preview component
+   - Receives configuration props
+   - Supports light/dark/system modes
+   - Real-time updates
 
-### Brand Theme Generator
+3. **`export.js`** - Standalone generator
+   - `generateWidgetHTML()` - Complete HTML document
+   - `generateWidgetScript()` - Vanilla JavaScript
+   - Zero external dependencies
+   - Inline styles and fonts
 
-Upload any logo and automatically extract **8 brand-consistent color presets**:
+### Key Technical Features
 
-| Preset | Description | Best For |
-|--------|-------------|----------|
-| **Monochrome** | Single dominant hue | Minimalist designs |
-| **Contrast** | High contrast pairs | Readability focus |
-| **Vibrant** | Bright, energetic colors | Eye-catching widgets |
-| **Professional** | Muted, balanced tones | Corporate/business |
-| **Dark** | Deep background tones | Dark mode interfaces |
-| **Light** | Bright, airy palette | Light mode interfaces |
-| **Neon** | High saturation glows | Cyberpunk aesthetic |
-| **Minimal** | Subtle, understated | Clean, modern look |
-
-**Powered by ColorThief** - Extracts dominant colors using k-means clustering for intelligent palette generation.
-
-### Documentation
-
-📚 **Full Brand Guidelines**: [`BRAND_GUIDELINES.md`](./BRAND_GUIDELINES.md)  
-📊 **Implementation Summary**: [`BRAND_IMPLEMENTATION_SUMMARY.md`](./BRAND_IMPLEMENTATION_SUMMARY.md)  
-🎨 **Theme Generator Guide**: [`BRAND_THEME_GENERATOR_GUIDE.md`](./BRAND_THEME_GENERATOR_GUIDE.md)  
-⚡ **Quick Reference**: [`BRAND_QUICK_REFERENCE.md`](./BRAND_QUICK_REFERENCE.md)
+✨ **Glassmorphic UI** - Backdrop blur, transparency effects, neon borders  
+📊 **Container Queries** - Responsive widgets that adapt to embed size  
+🎨 **SVG Textures** - Inline data URIs for stars, noise, dots, grid, waves  
+🌓 **Theme System** - System preference detection + manual overrides  
+♿ **WCAG AA Compliant** - Accessible color contrast and keyboard navigation  
+📦 **Code Splitting** - Optimized chunks for faster load times  
+🔒 **Type Safety** - PropTypes validation throughout
 
 ---
 
@@ -524,382 +454,223 @@ All widgets follow a **modular three-file pattern**:
 
 ---
 
-## 🛠️ Tech Stack
+## 🎨 Brand System & Customization
 
-### Core Technologies
+### 🌈 JaZeR Neon Theme
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| **React** | 19.2.0 | UI framework with latest features |
-| **Vite** | 7.2.5 (Rolldown) | Lightning-fast build tool with Rolldown bundler |
-| **TailwindCSS** | 3.4.18 | Utility-first styling framework |
-| **Lucide React** | 0.554.0 | Beautiful icon library (1000+ icons) |
-| **ColorThief** | 2.6.0 | AI-powered color extraction from images |
-| **ESLint** | 9.x | Code quality with flat config format |
+Built-in cyberpunk color palette with 10 carefully crafted colors:
 
-### Build Configuration
+| Color | Hex | Purpose |
+|-------|-----|---------|
+| 🟣 **Electric Purple** | `#8B5CF6` | Primary brand, headings, CTAs |
+| 🔵 **Cosmic Blue** | `#3B82F6` | Links, interactive elements |
+| 🩷 **Neon Pink** | `#EC4899` | Highlights, hover states |
+| 🟡 **Sunburst Gold** | `#F59E0B` | Warnings, attention |
+| 🩵 **Aether Teal** | `#06B6D4` | Info states, accents |
+| 🟣 **Ultraviolet** | `#A78BFA` | Secondary highlights |
+| ⚫ **Night Black** | `#0B0E12` | Dark backgrounds |
+| ⚪ **Stardust White** | `#F8F9FF` | Light text |
+| ⬛ **Graphite** | `#1F2937` | Cards, panels |
+| 🔘 **Soft Slate** | `#94A3B8` | Borders, disabled states |
 
-**Vite** (`vite.config.js`):
-- Base path: `/` (custom domain: jazer-444.github.io/notion-widget-builder)
-- Code splitting: React vendor chunk + icon chunk optimization
-- Dev server: Port 3000 with auto-open browser
-- Output: `dist/` with optimized assets
+### 🎭 Logo Color Extraction
 
-**Tailwind** (`tailwind.config.js`):
-- Scans: `index.html` + `src/**/*.{js,ts,jsx,tsx}`
-- Custom utilities: JaZeR brand colors, neon glow shadows, gradients
-- Responsive breakpoints: Mobile-first approach
+Upload any logo image to automatically extract an 8-color theme using ColorThief's intelligent k-means clustering:
 
-**ESLint** (`eslint.config.js`):
-- Flat config format (ESLint 9+)
-- React Hooks plugin + React Refresh
-- Ignore unused vars starting with uppercase/underscore
+**8 Auto-Generated Presets:**
+1. **Monochrome** - Single dominant hue variations
+2. **Contrast** - High contrast pairs for readability
+3. **Vibrant** - Bright, energetic colors
+4. **Professional** - Muted, balanced tones
+5. **Dark** - Deep tones for dark mode
+6. **Light** - Bright tones for light mode
+7. **Neon** - High saturation cyberpunk glow
+8. **Minimal** - Subtle, understated palette
 
-### Development Scripts
+### ✨ Visual Effects
 
-```bash
-npm run dev        # Start dev server (http://localhost:3000)
-npm run build      # Production build → dist/
-npm run preview    # Preview production build locally
-npm run lint       # Run ESLint checks
-npm run deploy     # Build + deploy to GitHub Pages
-```
-
-### Project Structure
-
-```
-notion-widget-builder/
-├── src/
-│   ├── widgets/                  # Widget modules (8 types)
-│   │   ├── clock-widget/
-│   │   │   ├── config.js         # Widget configuration schema
-│   │   │   ├── ClockWidget.jsx   # React component for preview
-│   │   │   └── export.js         # HTML/JS generator
-│   │   ├── countdown-widget/
-│   │   ├── counter-widget/
-│   │   ├── weather-widget/
-│   │   ├── image-gallery-widget/
-│   │   ├── quotes-widget/
-│   │   ├── life-progress-bar-widget/
-│   │   └── new-button-generator-widget/
-│   ├── theme/
-│   │   └── jazerNeonTheme.js     # Brand theme constants
-│   ├── contexts/
-│   │   └── ThemeContext.jsx      # React Context for theming
-│   ├── utils/
-│   │   └── brandThemeGenerator.js # Logo color extraction
-│   ├── components/
-│   │   └── BrandLogoUploader.jsx # Logo upload UI
-│   ├── App.jsx                   # Main application (~25,000+ tokens)
-│   ├── main.jsx                  # React entry point
-│   └── index.css                 # Global styles + Tailwind
-├── public/                       # Static assets
-├── dist/                         # Production build output
-├── index.html                    # HTML entry point
-├── vite.config.js                # Vite configuration
-├── tailwind.config.js            # Tailwind configuration
-├── eslint.config.js              # ESLint configuration
-└── package.json                  # Dependencies + scripts
-```
-
-### Widget Architecture
-
-All widgets follow a **modular three-file pattern**:
-
-1. **`config.js`** - Configuration schema
-   - `id`, `label`, `description`
-   - `defaultConfig` with all settings
-   - `fields` array defining UI controls
-   - Must import `jazerNeonTheme` for brand consistency
-
-2. **`<WidgetName>Widget.jsx`** - React preview component
-   - Receives `config` prop
-   - Renders live preview in builder
-   - Supports light/dark/system appearance modes
-
-3. **`export.js`** - Standalone generator
-   - `generateWidgetHTML(config)` - Complete HTML document
-   - `generateWidgetScript(config)` - Vanilla JavaScript
-   - Zero dependencies (except Google Fonts CDN)
-   - Embeds `jazerNeonTheme` fonts, variables, and animations
-
-### Key Features
-
-- **Glassmorphic UI** - Backdrop blur, transparency, neon borders
-- **Container Queries** - Responsive widgets adapt to embed size
-- **SVG Textures** - Stars, noise, dots, grid, waves (inline data URIs)
-- **Dark Mode First** - System preference detection + manual toggle
-- **Accessibility** - WCAG AA contrast, focus states, keyboard navigation
-- **Zero Config** - Works out of the box, optional customization
+All widgets support:
+- 💫 **Neon Glow** - Text and border glows
+- 🌈 **Gradients** - Multi-color smooth transitions
+- 🌟 **Glassmorphism** - Backdrop blur and transparency
+- 🎨 **Background Textures** - Stars, noise, dots, grid, waves
+- 🌓 **Theme Switching** - Automatic light/dark mode detection
 
 ---
 
 ## 🚢 Deployment
 
-### Automated Deployment (GitHub Actions)
+### GitHub Pages (Automated CI/CD)
 
-The repository includes automated CI/CD via GitHub Actions:
+The repository includes automated deployment via GitHub Actions:
 
 ```yaml
-Trigger: Push to 'master' branch (or manual dispatch)
+Trigger: Push to 'master' branch
 Build: Node 20 → npm ci → npm run build
 Deploy: dist/ → GitHub Pages (gh-pages branch)
-Custom Domain: https://jazer-444.github.io/notion-widget-builder/
+Live URL: https://jazer-444.github.io/notion-widget-builder/
 ```
 
-**Location**: `.github/workflows/deploy.yml`
+### Manual Deployment
 
-### Manual Deployment Options
-
-#### 1️⃣ GitHub Pages (Free, Unlimited)
+<details>
+<summary><b>📘 GitHub Pages</b></summary>
 
 ```bash
-# Option A: Using gh-pages package (recommended)
-npm run deploy  # Builds and deploys automatically
+# Using gh-pages package (recommended)
+npm run deploy
 
-# Option B: Manual deployment
+# Manual deployment
 npm run build
 git add dist -f
 git commit -m "Deploy to GitHub Pages"
 git subtree push --prefix dist origin gh-pages
 ```
+</details>
 
-**Setup**:
-1. Go to repository **Settings** → **Pages**
-2. Source: Deploy from branch `gh-pages`
-3. Custom domain (optional): Add CNAME record pointing to `<username>.github.io`
-
-#### 2️⃣ Vercel (Fastest, Auto SSL)
+<details>
+<summary><b>⚡ Vercel</b></summary>
 
 ```bash
-# Install Vercel CLI
 npm i -g vercel
-
-# Deploy
 vercel --prod
 ```
+</details>
 
-**Features**: Instant previews, automatic HTTPS, global CDN, zero config
+<details>
+<summary><b>🎨 Netlify</b></summary>
 
-#### 3️⃣ Netlify (Drag & Drop)
-
-**Option A: Netlify Drop**
+**Option A: Drag & Drop**
 1. Visit [app.netlify.com/drop](https://app.netlify.com/drop)
 2. Run `npm run build`
 3. Drag `dist/` folder
-4. Get instant URL
 
 **Option B: Git Integration**
-1. Connect repository to Netlify
-2. Build command: `npm run build`
-3. Publish directory: `dist`
-4. Auto-deploy on push
+- Build command: `npm run build`
+- Publish directory: `dist`
+</details>
 
-#### 4️⃣ Cloudflare Pages
+<details>
+<summary><b>☁️ Cloudflare Pages</b></summary>
 
 ```bash
 npm run build
 npx wrangler pages deploy dist
 ```
-
-#### 5️⃣ Other Static Hosts
-
-- **Firebase Hosting**: `firebase deploy`
-- **Surge**: `surge dist/`
-- **Render**: Connect repo, build & deploy
-- **AWS S3 + CloudFront**: Upload `dist/` to S3 bucket
-
-### Environment Configuration
-
-Update `vite.config.js` for custom domains:
-
-```js
-export default defineConfig({
-  base: '/notion-widget-builder/',  // For GitHub Pages
-  // OR
-  base: '/',  // For custom domain
-});
-```
+</details>
 
 ---
 
 ## 📚 Documentation
 
 ### Core Documentation
-
-| Document | Description |
-|----------|-------------|
-| **[BRAND_GUIDELINES.md](./BRAND_GUIDELINES.md)** | Complete brand specifications (colors, typography, effects) |
-| **[BRAND_IMPLEMENTATION_SUMMARY.md](./BRAND_IMPLEMENTATION_SUMMARY.md)** | Implementation details and code examples |
-| **[BRAND_QUICK_REFERENCE.md](./BRAND_QUICK_REFERENCE.md)** | Quick lookup for developers |
-| **[FEATURE_VALIDATION_REPORT.md](./FEATURE_VALIDATION_REPORT.md)** | Feature audit and widget coverage analysis |
-| **[IMPROVEMENTS_APPLIED.md](./IMPROVEMENTS_APPLIED.md)** | Change log and applied improvements |
-| **[WIDGET_FEATURE_AUDIT.md](./WIDGET_FEATURE_AUDIT.md)** | Widget-by-widget feature documentation |
+- **[BRAND_GUIDELINES.md](./BRAND_GUIDELINES.md)** - Complete brand specifications
+- **[BRAND_IMPLEMENTATION_SUMMARY.md](./BRAND_IMPLEMENTATION_SUMMARY.md)** - Implementation details
+- **[FEATURE_VALIDATION_REPORT.md](./FEATURE_VALIDATION_REPORT.md)** - Feature audit
 
 ### Brand Theme System
+- **[BRAND_THEME_GENERATOR_GUIDE.md](./BRAND_THEME_GENERATOR_GUIDE.md)** - Theme generator documentation
+- **[BRAND_QUICK_REFERENCE.md](./BRAND_QUICK_REFERENCE.md)** - Quick developer reference
 
-| Document | Description |
-|----------|-------------|
-| **[BRAND_THEME_GENERATOR_GUIDE.md](./BRAND_THEME_GENERATOR_GUIDE.md)** | Comprehensive theme generator documentation |
-| **[BRAND_THEME_GENERATOR_QUICKSTART.md](./BRAND_THEME_GENERATOR_QUICKSTART.md)** | Quick start guide for logo uploads |
-| **[BRAND_THEME_GENERATOR_SUMMARY.md](./BRAND_THEME_GENERATOR_SUMMARY.md)** | Technical summary of color extraction |
-
-### Developer Guides
-
-| Document | Description |
-|----------|-------------|
-| **[CLAUDE.md](./CLAUDE.md)** | AI assistant guidance for code development |
-| **[GEMINI.md](./GEMINI.md)** | Additional development context |
-| **[ADDITIONAL_IMPROVEMENTS_ANALYSIS.md](./ADDITIONAL_IMPROVEMENTS_ANALYSIS.md)** | Future enhancement analysis |
+### Development
+- **[WIDGET_FEATURE_AUDIT.md](./WIDGET_FEATURE_AUDIT.md)** - Widget documentation
+- **[FINAL_WIDGET_LIST.md](./FINAL_WIDGET_LIST.md)** - Current widget registry
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please follow these guidelines:
-
 ### Development Workflow
 
-1. **Fork** the repository
-2. **Create** a feature branch (`git checkout -b feature/amazing-widget`)
-3. **Follow** JaZeR brand guidelines (see `BRAND_GUIDELINES.md`)
-4. **Test** your changes (`npm run dev`)
-5. **Lint** your code (`npm run lint`)
-6. **Commit** with clear messages (`git commit -m "Add: New cosmic widget"`)
-7. **Push** to your fork (`git push origin feature/amazing-widget`)
-8. **Open** a Pull Request
+1. Fork the repository
+2. Create feature branch (`git checkout -b feature/amazing-widget`)
+3. Follow brand guidelines (see `BRAND_GUIDELINES.md`)
+4. Test changes (`npm run dev`)
+5. Lint code (`npm run lint`)
+6. Commit (`git commit -m "feat: Add amazing widget"`)
+7. Push (`git push origin feature/amazing-widget`)
+8. Open Pull Request
 
-### Adding a New Widget
+### Adding New Widgets
 
-See `CLAUDE.md` for detailed instructions. Quick summary:
+Each widget follows a three-file pattern:
 
-1. Create `src/widgets/<widget-name>-widget/` directory (hyphenated lowercase)
-2. Add `config.js` (import `jazerNeonTheme`, define schema)
-3. Add `<WidgetName>Widget.jsx` (React component with `config` prop)
-4. Add `export.js` (standalone HTML/JS generators)
-5. Register in `src/App.jsx` (import, routing, config, export)
+1. **`src/widgets/widget-name/config.js`** - Schema & defaults
+2. **`src/widgets/widget-name/WidgetName.jsx`** - React preview
+3. **`src/widgets/widget-name/export.js`** - HTML generator
+
+See `CLAUDE.md` for detailed instructions.
 
 ### Code Standards
 
-- **Naming**: Hyphenated lowercase for directories (`clock-widget/`)
-- **Colors**: Always use `jazerNeonTheme.colors.*` constants
-- **Modes**: Support `lightMode` and `darkMode` configurations
-- **Exports**: Zero dependencies (except Google Fonts CDN)
-- **Accessibility**: WCAG AA contrast ratios, focus states
-- **Comments**: Only comment complex logic, not obvious code
-
-### Brand Compliance
-
-All contributions must:
-- ✅ Use official JaZeR color palette
-- ✅ Implement Orbitron (headings) + Montserrat (body) fonts
-- ✅ Support light/dark/system appearance modes
-- ✅ Include neon glow effects on interactive elements
-- ✅ Follow glassmorphic UI patterns
-
----
-
-## 📄 License
-
-**MIT License**
-
-Copyright (c) 2026 JaZeR
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
----
-
-## 👤 Author
-
-<div align="center">
-
-<img src="./public/assets/branding/app-icon.svg" alt="JaZeR Icon" width="80" />
-
-**JaZeR**  
-*Cyberpunk Aesthetics & Innovation*
-
-[![Website](https://img.shields.io/badge/🌐_Website-jazer--music.com-8B5CF6?style=for-the-badge)](https://jazer-music.com)
-[![Notion Widgets](https://img.shields.io/badge/🎨_Widgets-GitHub_Pages-3B82F6?style=for-the-badge)](https://jazer-444.github.io/notion-widget-builder/)
-
-</div>
-
----
-
-## 🙏 Acknowledgments
-
-- **React Team** - For the amazing React 19 framework
-- **Vite Team** - For the lightning-fast Rolldown bundler
-- **TailwindCSS** - For utility-first styling excellence
-- **Lucide Icons** - For beautiful, customizable icons
-- **ColorThief** - For intelligent color extraction
-- **Notion Team** - For the embeddable widget platform
+- **Naming**: Hyphenated lowercase directories (`clock-widget/`)
+- **Colors**: Use `jazerNeonTheme.colors.*` constants
+- **Modes**: Support light/dark/system configurations
+- **Exports**: Zero dependencies except Google Fonts
+- **Accessibility**: WCAG AA contrast, focus states
 
 ---
 
 ## 💡 FAQ
 
 <details>
-<summary><b>Can I use these widgets outside of Notion?</b></summary>
+<summary><b>Can I use widgets outside of Notion?</b></summary>
 
-Yes! The exported HTML files are standalone and work anywhere (websites, blogs, apps, etc.). Just embed the hosted URL using an `<iframe>`.
+Yes! Exported HTML files work anywhere - websites, blogs, apps. Embed via `<iframe>`.
 </details>
 
 <details>
 <summary><b>Do widgets work offline?</b></summary>
 
-Mostly yes. Widgets are self-contained except for Google Fonts (Orbitron, Montserrat) loaded from CDN. For full offline support, download fonts locally.
+Mostly yes. Only Google Fonts (Orbitron, Montserrat) load from CDN. Download fonts locally for full offline support.
 </details>
 
 <details>
-<summary><b>Can I customize beyond the UI options?</b></summary>
+<summary><b>Can I customize beyond the UI?</b></summary>
 
-Absolutely! Download the HTML, edit the inline styles/scripts, and re-host. Advanced users can modify widget source files directly.
+Absolutely! Download the HTML, edit inline styles/scripts, and re-host. Advanced users can modify source files directly.
 </details>
 
 <details>
-<summary><b>How do I update a widget after deploying?</b></summary>
+<summary><b>How do I update a deployed widget?</b></summary>
 
-Re-export from the builder and replace the hosted HTML file. The Notion embed will automatically reflect changes (may need refresh).
+Re-export from the builder, replace the hosted HTML file. Notion embeds auto-update (may need refresh).
 </details>
 
 <details>
-<summary><b>Are there size limits for Notion embeds?</b></summary>
+<summary><b>Can I use custom brand colors?</b></summary>
 
-Notion embeds can be resized freely. Use the builder's resizable canvas to test different dimensions before exporting.
+Yes! Upload your logo to auto-extract 8 colors, or manually customize all colors via picker.
 </details>
 
 <details>
-<summary><b>Can I use my own brand colors?</b></summary>
+<summary><b>How do I report bugs?</b></summary>
 
-Yes! Upload your logo to auto-extract 8 colors, or manually customize all colors using the color picker. The builder saves your preferences.
+Open a GitHub issue with description, reproduction steps, and screenshots.
 </details>
 
-<details>
-<summary><b>How do I report bugs or request features?</b></summary>
+---
 
-Open an issue on GitHub with detailed description, steps to reproduce, and screenshots if applicable. Feature requests are always welcome!
-</details>
+## 📄 License
+
+**MIT License** - Copyright (c) 2026 JaZeR
+
+See [LICENSE](./LICENSE) file for full details.
 
 ---
 
 <div align="center">
 
-### 🚀 Ready to Build?
+<img src="./Notion Widget Builder - Mobile App Icon.svg" alt="Mobile Icon" width="80" />
 
-**[Launch Builder](https://jazer-444.github.io/notion-widget-builder/)** • **[View Docs](./BRAND_GUIDELINES.md)** • **[Report Issue](https://github.com/JaZeR-444/notion-widget-builder/issues)**
+### 🚀 Ready to Build Amazing Widgets?
 
----
-
-**Built with 💜 by JaZeR** | **Powered by Vite ⚡ + React ⚛️**
-
-*Cyberpunk aesthetics meet functional design*
+**[🌐 Launch Builder](https://jazer-444.github.io/notion-widget-builder/)** • **[📖 View Docs](./BRAND_GUIDELINES.md)** • **[🐛 Report Issue](https://github.com/yourusername/notion-widget-builder/issues)**
 
 ---
+
+**Built with 💜 using React + Vite** | **Powered by Modern Web Technologies**
+
+*Transform your Notion workspace with beautiful, customizable widgets*
 
 </div>
-
-**Note**: This is a fully client-side application. Generated widgets are standalone HTML files that can be hosted anywhere and embedded into Notion pages using the `/embed` block. No backend required.

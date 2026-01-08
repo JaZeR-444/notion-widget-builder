@@ -1,8 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Instagram, RefreshCcw } from 'lucide-react';
-import { useTheme } from '../../contexts/ThemeContext'; // Import useTheme
+import { useTheme } from '../../hooks/useTheme'; // Import useTheme
 
-export const QuotesWidget = ({ config }) => {
+export const QuotesWidget = ({ config, onCustomizeRequest }) => {
   const { theme } = useTheme(); // Use the global theme
   const [currentQuote, setCurrentQuote] = useState({
     text: config.quoteText,
@@ -17,6 +17,11 @@ export const QuotesWidget = ({ config }) => {
     return false;
   });
   const [fetching, setFetching] = useState(false);
+  const isMountedRef = useRef(true);
+
+  useEffect(() => () => {
+    isMountedRef.current = false;
+  }, []);
 
   // Listen for system dark mode changes
   useEffect(() => {
@@ -33,32 +38,52 @@ export const QuotesWidget = ({ config }) => {
     // 'do-nothing' mode doesn't change isDark
   }, [config.appearanceMode]);
 
-  const fetchQuote = async () => {
+  useEffect(() => {
+    setCurrentQuote({
+      text: config.quoteText,
+      author: config.author
+    });
+  }, [config.quoteText, config.author]);
+
+  const fetchQuote = useCallback(async (signal) => {
+    if (!config.useQuoteAPI) return;
     setFetching(true);
     try {
-      const response = await fetch('https://api.quotable.io/random');
+      const response = await fetch('https://api.quotable.io/random', { signal });
+      if (!response.ok) {
+        throw new Error('Failed to fetch quote');
+      }
       const data = await response.json();
-      setCurrentQuote({ text: data.content, author: data.author });
+      if (!signal?.aborted && isMountedRef.current) {
+        setCurrentQuote({ text: data.content, author: data.author });
+      }
     } catch (error) {
-      console.error("Failed to fetch quote:", error);
-      // Optionally, set a fallback quote or show an error message
+      if (error.name !== 'AbortError') {
+        // Silently fail and keep existing quote
+      }
     } finally {
-      setFetching(false);
+      if (!signal?.aborted && isMountedRef.current) {
+        setFetching(false);
+      }
     }
-  };
+  }, [config.useQuoteAPI]);
 
   useEffect(() => {
-    fetchQuote();
-  }, []);
+    if (!config.useQuoteAPI) return undefined;
+    const controller = new AbortController();
+    fetchQuote(controller.signal);
+    return () => controller.abort();
+  }, [config.useQuoteAPI, fetchQuote]);
 
   useEffect(() => {
-    if (config.autoRefreshInterval > 0) {
-      const interval = setInterval(() => {
-        fetchQuote();
-      }, config.autoRefreshInterval * 60 * 1000);
-      return () => clearInterval(interval);
+    if (!config.useQuoteAPI || config.autoRefreshInterval <= 0) {
+      return undefined;
     }
-  }, [config.autoRefreshInterval]);
+    const interval = setInterval(() => {
+      fetchQuote();
+    }, config.autoRefreshInterval * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [config.autoRefreshInterval, config.useQuoteAPI, fetchQuote]);
 
   // Font mapping
   const getFontFamily = (fontType) => {
@@ -197,7 +222,7 @@ export const QuotesWidget = ({ config }) => {
         {/* Refresh icon */}
         {config.showRefreshIcon && (
           <button
-            onClick={fetchQuote}
+            onClick={() => fetchQuote()}
             className="mx-auto hover:scale-110 transition-transform"
             style={refreshButtonStyle}
             onMouseEnter={(e) => {
@@ -211,7 +236,7 @@ export const QuotesWidget = ({ config }) => {
               }
             }}
             aria-label="Refresh Quote"
-            disabled={fetching}
+            disabled={fetching || !config.useQuoteAPI}
           >
             <RefreshCcw className={`w-5 h-5 ${fetching ? 'animate-spin' : ''}`} />
           </button>
@@ -227,6 +252,7 @@ export const QuotesWidget = ({ config }) => {
             color: theme.colors.stardustWhite,
             fontFamily: theme.fonts.heading
           }}
+          onClick={() => onCustomizeRequest?.('contentSource')}
         >
           Customize
         </button>

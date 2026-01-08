@@ -3,17 +3,6 @@
 
 import { jazerNeonTheme } from '../../theme/jazerNeonTheme'; // Import jazerNeonTheme
 
-const escapeHTML = (str) => {
-  if (typeof str !== 'string') return str;
-  const map = {
-    '&': '&amp;',
-    '<': '&lt;',
-    '>': '&gt;',
-    '"': '&quot;',
-    "'": '&#39;'
-  };
-  return str.replace(/[&<>"']/g, (char) => map[char]);
-};
 
 export const generateHTML = (config) => {
   const isDark = config.appearanceMode === 'dark';
@@ -195,7 +184,7 @@ export const generateHTML = (config) => {
   ${config.showCustomizeButton ? '<button class="customize-button">Customize</button>' : ''}
 
   <script>
-    ${generateLifeProgressScript(config)}
+    ${generateScript(config)}
   </script>
 </body>
 </html>`;

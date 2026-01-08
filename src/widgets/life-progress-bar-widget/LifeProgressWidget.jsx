@@ -1,10 +1,100 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { BarChart3 } from 'lucide-react';
-import { useTheme } from '../../contexts/ThemeContext'; // Import useTheme
+import { useTheme } from '../../hooks/useTheme'; // Import useTheme
 
-export const LifeProgressWidget = ({ config }) => {
+const ProgressBar = ({
+  label,
+  percentage,
+  showValue = true,
+  barHeightPx,
+  barBackground,
+  barColor,
+  theme,
+  config
+}) => {
+  const barStyle = {
+    width: '100%',
+    height: `${barHeightPx}px`,
+    backgroundColor: barBackground,
+    borderRadius: '9999px',
+    overflow: 'hidden',
+    position: 'relative',
+    boxShadow: config.dropShadows ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
+  };
+
+  const fillStyle = {
+    width: `${percentage}%`,
+    height: '100%',
+    background: config.useGradientBars ? theme.gradients.gradient : barColor,
+    borderRadius: '9999px',
+    transition: 'width 0.5s ease',
+    boxShadow: config.useGlowEffect ? theme.effects.glow : 'none'
+  };
+
+  const getRemainingTime = () => {
+    const now = new Date();
+    if (label === 'Year') {
+      const yearEnd = new Date(now.getFullYear() + 1, 0, 1);
+      const diff = yearEnd - now;
+      return `${Math.floor(diff / (1000 * 60 * 60 * 24))} days`;
+    }
+    if (label === 'Month') {
+      const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      const diff = monthEnd - now;
+      return `${Math.floor(diff / (1000 * 60 * 60 * 24))} days`;
+    }
+    if (label === 'Week') {
+      const weekEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (7 - now.getDay()));
+      const diff = weekEnd - now;
+      return `${Math.floor(diff / (1000 * 60 * 60 * 24))} days`;
+    }
+    if (label === 'Day') {
+      const dayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
+      const diff = dayEnd - now;
+      return `${Math.floor(diff / (1000 * 60 * 60))} hours`;
+    }
+    if (label === 'Lifetime') {
+      const birthDate = new Date(config.birthDate);
+      const lifeExpectancyMs = config.lifeExpectancy * 365.25 * 24 * 60 * 60 * 1000;
+      const endDate = new Date(birthDate.getTime() + lifeExpectancyMs);
+      const diff = endDate - now;
+      return `${Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25))} years`;
+    }
+    return '';
+  };
+
+  return (
+    <div className="mb-4">
+      <div className="flex justify-between items-center mb-2">
+        <span className="text-sm font-medium" style={{ fontFamily: theme.fonts.body }}>
+          {label}
+        </span>
+        <div className="flex items-center">
+          {config.showRemainingTime && (
+            <span className="text-xs opacity-70 mr-2" style={{ fontFamily: theme.fonts.heading }}>
+              {getRemainingTime()} left
+            </span>
+          )}
+          {showValue && (
+            <span className="text-xs opacity-70" style={{ fontFamily: theme.fonts.heading }}>
+              {percentage.toFixed(1)}%
+            </span>
+          )}
+        </div>
+      </div>
+      <div style={barStyle}>
+        <div style={fillStyle} />
+      </div>
+    </div>
+  );
+};
+
+export const LifeProgressWidget = ({ config, onCustomizeRequest }) => {
   const { theme, getColor } = useTheme(); // Use the global theme
-  const [isDark, setIsDark] = useState(false);
+  const [systemPrefersDark, setSystemPrefersDark] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
   const [progress, setProgress] = useState({
     year: 0,
     month: 0,
@@ -13,20 +103,18 @@ export const LifeProgressWidget = ({ config }) => {
     lifetime: 0
   });
 
-  // Detect system dark mode
   useEffect(() => {
-    if (config.appearanceMode === 'system') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      setIsDark(mediaQuery.matches);
-      const handler = (e) => setIsDark(e.matches);
-      mediaQuery.addEventListener('change', handler);
-      return () => mediaQuery.removeEventListener('change', handler);
-    } else if (config.appearanceMode === 'dark') {
-      setIsDark(true);
-    } else if (config.appearanceMode === 'light') {
-      setIsDark(false);
-    }
+    if (config.appearanceMode !== 'system' || typeof window === 'undefined') return undefined;
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (event) => setSystemPrefersDark(event.matches);
+    mediaQuery.addEventListener('change', handler);
+    return () => mediaQuery.removeEventListener('change', handler);
   }, [config.appearanceMode]);
+
+  const isDark = useMemo(() => {
+    if (config.appearanceMode === 'system') return systemPrefersDark;
+    return config.appearanceMode === 'dark';
+  }, [config.appearanceMode, systemPrefersDark]);
 
   // Calculate progress
   useEffect(() => {
@@ -97,85 +185,6 @@ export const LifeProgressWidget = ({ config }) => {
   };
   const barHeightPx = barHeightMap[config.barHeight] || barHeightMap.medium;
 
-  // Progress bar component
-  const ProgressBar = ({ label, percentage, showValue = true }) => {
-    const barStyle = {
-      width: '100%',
-      height: `${barHeightPx}px`,
-      backgroundColor: barBackground,
-      borderRadius: '9999px',
-      overflow: 'hidden',
-      position: 'relative',
-      boxShadow: config.dropShadows ? '0 2px 4px rgba(0,0,0,0.1)' : 'none'
-    };
-
-    const fillStyle = {
-      width: `${percentage}%`,
-      height: '100%',
-      background: config.useGradientBars ? theme.gradients.gradient : barColor,
-      borderRadius: '9999px',
-      transition: 'width 0.5s ease',
-      boxShadow: config.useGlowEffect ? theme.effects.glow : 'none'
-    };
-
-    const getRemainingTime = () => {
-      const now = new Date();
-      if (label === 'Year') {
-        const yearEnd = new Date(now.getFullYear() + 1, 0, 1);
-        const diff = yearEnd - now;
-        return `${Math.floor(diff / (1000 * 60 * 60 * 24))} days`;
-      }
-      if (label === 'Month') {
-        const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-        const diff = monthEnd - now;
-        return `${Math.floor(diff / (1000 * 60 * 60 * 24))} days`;
-      }
-      if (label === 'Week') {
-        const weekEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + (7 - now.getDay()));
-        const diff = weekEnd - now;
-        return `${Math.floor(diff / (1000 * 60 * 60 * 24))} days`;
-      }
-      if (label === 'Day') {
-        const dayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1);
-        const diff = dayEnd - now;
-        return `${Math.floor(diff / (1000 * 60 * 60))} hours`;
-      }
-      if (label === 'Lifetime') {
-        const birthDate = new Date(config.birthDate);
-        const lifeExpectancyMs = config.lifeExpectancy * 365.25 * 24 * 60 * 60 * 1000;
-        const endDate = new Date(birthDate.getTime() + lifeExpectancyMs);
-        const diff = endDate - now;
-        return `${Math.floor(diff / (1000 * 60 * 60 * 24 * 365.25))} years`;
-      }
-      return '';
-    };
-
-    return (
-      <div className="mb-4">
-        <div className="flex justify-between items-center mb-2">
-          <span className="text-sm font-medium" style={{ fontFamily: theme.fonts.body }}>
-            {label}
-          </span>
-          <div className='flex items-center'>
-            {config.showRemainingTime && (
-              <span className="text-xs opacity-70 mr-2" style={{ fontFamily: theme.fonts.heading }}>
-                {getRemainingTime()} left
-              </span>
-            )}
-            {showValue && (
-              <span className="text-xs opacity-70" style={{ fontFamily: theme.fonts.heading }}>
-                {percentage.toFixed(1)}%
-              </span>
-            )}
-          </div>
-        </div>
-        <div style={barStyle}>
-          <div style={fillStyle} />
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div
       className="h-full w-full p-6 relative"
@@ -195,23 +204,63 @@ export const LifeProgressWidget = ({ config }) => {
 
         <div className="space-y-4">
           {config.showYear && (
-            <ProgressBar label="Year" percentage={progress.year} />
+            <ProgressBar
+              label="Year"
+              percentage={progress.year}
+              barHeightPx={barHeightPx}
+              barBackground={barBackground}
+              barColor={barColor}
+              theme={theme}
+              config={config}
+            />
           )}
 
           {config.showMonth && (
-            <ProgressBar label="Month" percentage={progress.month} />
+            <ProgressBar
+              label="Month"
+              percentage={progress.month}
+              barHeightPx={barHeightPx}
+              barBackground={barBackground}
+              barColor={barColor}
+              theme={theme}
+              config={config}
+            />
           )}
 
           {config.showWeek && (
-            <ProgressBar label="Week" percentage={progress.week} />
+            <ProgressBar
+              label="Week"
+              percentage={progress.week}
+              barHeightPx={barHeightPx}
+              barBackground={barBackground}
+              barColor={barColor}
+              theme={theme}
+              config={config}
+            />
           )}
 
           {config.showDay && (
-            <ProgressBar label="Day" percentage={progress.day} />
+            <ProgressBar
+              label="Day"
+              percentage={progress.day}
+              barHeightPx={barHeightPx}
+              barBackground={barBackground}
+              barColor={barColor}
+              theme={theme}
+              config={config}
+            />
           )}
 
           {config.showLifetime && (
-            <ProgressBar label="Lifetime" percentage={progress.lifetime} />
+            <ProgressBar
+              label="Lifetime"
+              percentage={progress.lifetime}
+              barHeightPx={barHeightPx}
+              barBackground={barBackground}
+              barColor={barColor}
+              theme={theme}
+              config={config}
+            />
           )}
         </div>
 
@@ -233,6 +282,7 @@ export const LifeProgressWidget = ({ config }) => {
             color: theme.colors.stardustWhite,
             fontFamily: theme.fonts.heading
           }}
+          onClick={() => onCustomizeRequest?.('progressConfiguration')}
         >
           Customize
         </button>

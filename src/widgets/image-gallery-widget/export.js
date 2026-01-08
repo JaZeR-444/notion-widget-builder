@@ -4,7 +4,7 @@ import { jazerNeonTheme } from '../../theme/jazerNeonTheme'; // Import jazerNeon
 // Copied from App.jsx to satisfy dependency without modifying App.jsx
 const escapeHTML = (str) => {
   if (typeof str !== 'string') return str;
-  return str.replace(/[&<>\'\"]/,
+  return str.replace(/[&<>'"]/,
     tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag]));
 };
 
@@ -105,7 +105,7 @@ export const generateHTML = (config) => {
         const galleryImages = document.querySelectorAll('.gallery-image');
         const galleryDots = document.querySelectorAll('.gallery-dot');
         const animateGallery = ${config.animateGallerySpeedToggle};
-        const scrollSpeed = ${scrollSpeed};
+        const scrollSpeed = ${scrollSpeedMs};
         let intervalId;
 
         function updateGallery() {
@@ -148,7 +148,7 @@ export const generateHTML = (config) => {
 </html>`;
 };
 
-export const generateScript = (config) => {
+export const generateScript = () => {
   // The actual script is embedded directly in generateImageGalleryHTML for simplicity
   // For external script, the logic would be similar but wrapped in a function/IIFE
   return ''; 

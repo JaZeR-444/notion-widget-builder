@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { generateBrandPresets } from '../../utils/brandThemeGenerator';
-import { useTheme } from '../../contexts/ThemeContext'; // Import useTheme
+import { useTheme } from '../../hooks/useTheme'; // Import useTheme
 
 // Preset themes
 const PRESET_THEMES = {
@@ -69,16 +69,25 @@ const FlipCard = ({ value, label, colors, size }) => {
   const [prevValue, setPrevValue] = useState(value);
 
   useEffect(() => {
-    if (value !== prevValue) {
+    if (value === prevValue) return undefined;
+    let flipTimer;
+    let settleTimer;
+    let finalizeTimer;
+    flipTimer = setTimeout(() => {
       setIsFlipping(true);
-      setTimeout(() => {
+      settleTimer = setTimeout(() => {
         setDisplayValue(value);
-        setTimeout(() => {
+        finalizeTimer = setTimeout(() => {
           setIsFlipping(false);
           setPrevValue(value);
         }, 300);
       }, 300);
-    }
+    }, 0);
+    return () => {
+      clearTimeout(flipTimer);
+      clearTimeout(settleTimer);
+      clearTimeout(finalizeTimer);
+    };
   }, [value, prevValue]);
 
   const cardStyle = {
@@ -142,7 +151,7 @@ const FlipCard = ({ value, label, colors, size }) => {
 };
 
 // Helper component for analog clock
-const AnalogClock = ({ time, size, type, colors, config }) => {
+const AnalogClock = ({ time, size, type, colors, config, theme }) => {
   const hours = time.getHours() % 12;
   const minutes = time.getMinutes();
   const seconds = time.getSeconds();
@@ -243,7 +252,7 @@ const AnalogClock = ({ time, size, type, colors, config }) => {
           />
         );
 
-      case 'arrow':
+      case 'arrow': {
         const arrowWidth = width * 2;
         const arrowLength = length * 0.15;
         const arrowX = center + Math.sin(angle * Math.PI / 180) * (length - arrowLength);
@@ -258,8 +267,9 @@ const AnalogClock = ({ time, size, type, colors, config }) => {
             />
           </g>
         );
+      }
 
-      case 'modern':
+      case 'modern': {
         const backLength = length * 0.2;
         const backX = center - Math.sin(angle * Math.PI / 180) * backLength;
         const backY = center + Math.cos(angle * Math.PI / 180) * backLength;
@@ -272,6 +282,7 @@ const AnalogClock = ({ time, size, type, colors, config }) => {
             strokeLinecap="round"
           />
         );
+      }
 
       case 'minimalist':
         return (
@@ -292,9 +303,6 @@ const AnalogClock = ({ time, size, type, colors, config }) => {
         );
     }
   };
-
-  const smooth = type === 'smooth' || type === 'trail';
-  const showSeconds = type !== 'smooth';
 
   return (
     <svg width={size} height={size} style={{ filter: config.glowEffect ? `drop-shadow(0 0 ${theme.effects.glowBlur} ${colors.clockColor})` : 'none' }}>
@@ -321,7 +329,7 @@ const AnalogClock = ({ time, size, type, colors, config }) => {
   );
 };
 
-export const ClockWidget = ({ config, brandTheme }) => {
+export const ClockWidget = ({ config, brandTheme, onCustomizeRequest }) => {
   const { theme } = useTheme(); // Use the global theme
   const [time, setTime] = useState(new Date());
   const [systemPrefersDark, setSystemPrefersDark] = useState(() => 
@@ -644,7 +652,7 @@ export const ClockWidget = ({ config, brandTheme }) => {
       const parts = formatter.formatToParts(time);
       const tzPart = parts.find(p => p.type === 'timeZoneName');
       return tzPart ? tzPart.value : '';
-    } catch (e) {
+    } catch {
       return '';
     }
   };
@@ -686,12 +694,13 @@ export const ClockWidget = ({ config, brandTheme }) => {
           year: 'numeric',
           ...tzOptions
         });
-      case 'iso':
+      case 'iso': {
         // ISO format: YYYY-MM-DD
         const year = time.getFullYear();
         const month = String(time.getMonth() + 1).padStart(2, '0');
         const day = String(time.getDate()).padStart(2, '0');
         return `${year}-${month}-${day}`;
+      }
       default:
         return time.toLocaleDateString([], {
           weekday: 'long',
@@ -770,6 +779,7 @@ export const ClockWidget = ({ config, brandTheme }) => {
         type={analogType}
         colors={colors}
         config={config}
+        theme={theme}
       />;
     }
 
@@ -883,6 +893,7 @@ export const ClockWidget = ({ config, brandTheme }) => {
             color: colors.digitColor,
             opacity: 0.8
           }}
+          onClick={() => onCustomizeRequest?.('appearance')}
         >
           Customize
         </button>

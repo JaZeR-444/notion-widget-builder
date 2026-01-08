@@ -203,7 +203,6 @@ export const generateClockHTML = (config) => {
 
 export const generateClockScript = (config) => {
   const isSmoothClock = config.clockType === 'analog-smooth' || config.clockType === 'analog-trail';
-  const updateInterval = isSmoothClock ? 'requestAnimationFrame' : 'setInterval';
 
   return `
   function updateClock() {

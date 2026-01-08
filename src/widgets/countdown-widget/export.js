@@ -149,7 +149,7 @@ export const generateHTML = (config) => {
   <div id="confetti-container"></div>
 
   <script>
-    ${generateCountdownScript(config)}
+    ${generateScript(config)}
   </script>
 </body>
 </html>`;

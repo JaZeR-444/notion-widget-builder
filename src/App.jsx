@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import {
   Clock, Quote, Timer, Palette,
   Download, Copy, Layout, Code, Image as ImageIcon,
@@ -10,9 +10,15 @@ import {
   Trash2, Copy as CopyIcon, CornerDownRight, ArrowUp, ArrowDown,
   Eye, EyeOff, MoreHorizontal, CloudRain, Sun, Moon, Wind,
   Droplets, Thermometer, MapPin, Lock, Calendar, Activity,
-  MousePointer, Zap, Type, Loader, Rocket, Upload
+  MousePointer, Zap, Type, Loader, Rocket, Upload, Star, Menu
 } from 'lucide-react';
 import ColorThief from 'colorthief';
+
+// New components for modernization
+import { GlobalNavigation } from './components/GlobalNavigation';
+import { KeyboardShortcutsHelp } from './components/KeyboardShortcutsHelp';
+import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts';
+import { ToastProvider, useToast } from './components/Toast';
 
 import { counterConfig } from './widgets/counter-widget/config';
 import { CounterWidget } from './widgets/counter-widget/CounterWidget';
@@ -30,10 +36,6 @@ import { weatherConfig } from './widgets/weather-widget/config';
 import { WeatherWidget } from './widgets/weather-widget/WeatherWidget';
 import { generateWeatherHTML, generateWeatherScript } from './widgets/weather-widget/export';
 
-import { lifeProgressConfig } from './widgets/life-progress-bar-widget/config';
-import { LifeProgressWidget } from './widgets/life-progress-bar-widget/LifeProgressWidget';
-import { generateHTML as generateLifeProgressHTML, generateScript as generateLifeProgressScript } from './widgets/life-progress-bar-widget/export';
-
 import { clockConfig } from './widgets/clock-widget/config';
 import { ClockWidget } from './widgets/clock-widget/ClockWidget';
 import { generateClockHTML, generateClockScript } from './widgets/clock-widget/export';
@@ -49,6 +51,9 @@ import { generateHTML as generateButtonHTML, generateScript as generateButtonScr
 
 import { BrandLogoUploader } from './components/BrandLogoUploader';
 import BrandThemeGenerator from './components/BrandThemeGenerator';
+import { UpgradeOrbRadial } from './components/UpgradeOrbRadial';
+import { normalizeBrandTheme } from './utils/brandTheme';
+import { useRecentWidgets, formatRelativeTime } from './hooks/useRecentWidgets';
 
 // --- CONSTANTS & CONFIG ---
 
@@ -80,6 +85,143 @@ const COMMON_EMOJIS = [
   "❤️", "👍", "👋", "🙌", "👏", "🤝", "👀", "🧠", "💪", "⚡",
   "🛑", "✅", "❌", "❓", "❗", "➡️", "⬅️", "⬆️", "⬇️", "🔗"
 ];
+
+
+const BUTTON_ARCHETYPES = [
+  {
+    id: 'cycle',
+    label: 'Cycle Button',
+    description: 'Pomodoro start / pause / skip break',
+    icon: '⏱',
+    config: {
+      label: 'Pomodoro Cycle',
+      icon: '⏱',
+      tooltip: 'Cycle focus, pause, skip',
+      behaviorType: 'cycle',
+      variant: 'capsule'
+    }
+  },
+  {
+    id: 'createPage',
+    label: 'Create Page Button',
+    description: 'Creates a Notion page entry',
+    icon: '📄',
+    config: {
+      label: 'Create Page',
+      icon: '📄',
+      tooltip: 'Creates a Notion page',
+      behaviorType: 'createPage',
+      variant: 'outline'
+    }
+  },
+  {
+    id: 'template',
+    label: 'Template Button',
+    description: 'Applies a database template',
+    icon: '🧩',
+    config: {
+      label: 'Apply Template',
+      icon: '🧩',
+      tooltip: 'Runs assigned template',
+      behaviorType: 'template',
+      variant: 'ghost'
+    }
+  },
+  {
+    id: 'counter',
+    label: 'Counter Button',
+    description: 'Counts presses and displays value',
+    icon: '🔢',
+    config: {
+      label: 'Log Count',
+      icon: '🔢',
+      tooltip: 'Adds to counter',
+      behaviorType: 'counter',
+      variant: 'solid'
+    }
+  },
+  {
+    id: 'modeSwitcher',
+    label: 'Mode Switcher',
+    description: 'Switches focus/break modes',
+    icon: '🔀',
+    config: {
+      label: 'Mode Switch',
+      icon: '🔀',
+      tooltip: 'Switches mode',
+      behaviorType: 'modeSwitcher',
+      variant: 'capsule'
+    }
+  },
+  {
+    id: 'themeToggle',
+    label: 'Theme Toggle',
+    description: 'Toggles light / dark theme',
+    icon: '🌓',
+    config: {
+      label: 'Theme Toggle',
+      icon: '🌓',
+      tooltip: 'Toggles theme',
+      behaviorType: 'themeToggle',
+      variant: 'orb'
+    }
+  },
+  {
+    id: 'playlist',
+    label: 'Playlist Button',
+    description: 'Cycles through playlist names',
+    icon: '🎵',
+    config: {
+      label: 'Playlist',
+      icon: '🎵',
+      tooltip: 'Cycle playlist tracks',
+      behaviorType: 'playlist',
+      variant: 'circular',
+      playlistText: 'Lo-fi Beats\nHyperfocus Mix\nBreak Vibes'
+    }
+  },
+  {
+    id: 'navigation',
+    label: 'Navigation Button',
+    description: 'Opens a Notion page',
+    icon: '🔗',
+    config: {
+      label: 'Open Notion',
+      icon: '🔗',
+      tooltip: 'Opens linked Notion page',
+      behaviorType: 'navigation',
+      variant: 'outline'
+    }
+  },
+  {
+    id: 'meta',
+    label: 'Meta Button',
+    description: 'Runs macro sequences',
+    icon: '🧠',
+    config: {
+      label: 'Meta Macro',
+      icon: '🧠',
+      tooltip: 'Runs macro playlist',
+      behaviorType: 'meta',
+      variant: 'solid'
+    }
+  },
+  {
+    id: 'secret',
+    label: 'Secret Button',
+    description: 'Long-press unlocks a hidden UI',
+    icon: '🕵️',
+    config: {
+      label: 'Secret Button',
+      icon: '🕵️',
+      tooltip: 'Hold for 2 seconds',
+      behaviorType: 'secret',
+      variant: 'ghost'
+    }
+  }
+];
+
+const CONFIG_SECTION_BATCH = 4;
 
 const JAZER_BRAND = {
   // ===== OFFICIAL BRAND COLORS (all 10) =====
@@ -140,9 +282,9 @@ const JAZER_BRAND = {
     minWidthPrint: 30, // mm - print minimum
     clearSpace: '1em', // Padding equal to height of "J"
     paths: {
-      svg: '/assets/branding/app-logo.svg',
-      gif: '/assets/branding/app-logo.svg',
-      favicon: '/assets/branding/app-icon.svg'
+      svg: '/images/JaZeR BrandKit_OnSite/Logo_Primary_Full-Color.svg',
+      gif: '/images/JaZeR_Logo_OFFICIAL.gif',
+      favicon: '/images/JaZeR BrandKit_OnSite/favicon.svg'
     }
   }
 };
@@ -172,10 +314,32 @@ const encodeConfig = (obj) => {
 const decodeConfig = (str) => {
   try {
     return JSON.parse(decodeURIComponent(atob(str)));
-  } catch (e) {
-    console.error("Failed to decode config", e);
+  } catch {
+    // Silently fail for invalid configs
     return null;
   }
+};
+
+const loadStoredBrandTheme = () => {
+  if (typeof window === 'undefined') return null;
+  const savedTheme = window.localStorage.getItem('jazer_global_brand_theme');
+  const isActive = window.localStorage.getItem('jazer_global_brand_active');
+  if (savedTheme && isActive === 'true') {
+    try {
+      return normalizeBrandTheme(JSON.parse(savedTheme));
+    } catch {
+      return null;
+    }
+  }
+  const extractedTheme = window.localStorage.getItem('jazer_brand_theme');
+  if (extractedTheme) {
+    try {
+      return normalizeBrandTheme(JSON.parse(extractedTheme));
+    } catch {
+      return null;
+    }
+  }
+  return null;
 };
 
 const resolveThemeColors = (config, isDark) => {
@@ -195,6 +359,13 @@ class WidgetErrorBoundary extends React.Component {
 
   static getDerivedStateFromError(error) {
     return { hasError: true, error };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    // Log error to console in development
+    if (import.meta.env.DEV) {
+      console.error('Widget Error:', error, errorInfo);
+    }
   }
 
   render() {
@@ -367,6 +538,25 @@ const ButtonManager = ({ value, onChange }) => {
   const [activeIndex, setActiveIndex] = useState(null);
   const [showEmojiPicker, setShowEmojiPicker] = useState(null);
   const pickerRef = useRef(null);
+  const idCounterRef = useRef(0);
+  const behaviorOptions = useMemo(() => [
+    { value: 'custom', label: 'Custom' },
+    ...BUTTON_ARCHETYPES.map(template => ({
+      value: template.config.behaviorType || template.id,
+      label: template.label
+    }))
+  ], []);
+  const variantOptions = [
+    { value: 'solid', label: 'Solid' },
+    { value: 'text', label: 'Text Only' },
+    { value: 'icon', label: 'Icon Only' },
+    { value: 'iconText', label: 'Icon + Text' },
+    { value: 'capsule', label: 'Capsule' },
+    { value: 'circular', label: 'Circular' },
+    { value: 'orb', label: 'Floating Orb' },
+    { value: 'outline', label: 'Outline' },
+    { value: 'ghost', label: 'Ghost' }
+  ];
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -384,21 +574,44 @@ const ButtonManager = ({ value, onChange }) => {
     onChange(newButtons);
   };
 
+  const baseButtonProps = {
+    label: 'New Button',
+    url: '',
+    icon: '✨',
+    hideIcon: false,
+    colorPreset: 'grey',
+    backgroundColor: '#9B9A97',
+    backgroundOpacity: 100,
+    outlineColor: '#9B9A97',
+    textColor: '#FFFFFF',
+    hoverBackgroundColor: '#FFFFFF',
+    hoverTextColor: '#9B9A97',
+    enableHoverHighlight: true,
+    tooltip: '',
+    behaviorType: 'custom',
+    variant: 'solid',
+    playlistText: ''
+  };
+
+  const makeButtonId = () => {
+    idCounterRef.current += 1;
+    return `btn-${idCounterRef.current}`;
+  };
+
   const addButton = () => {
     const newBtn = {
-      id: `btn-${Date.now()}`,
-      label: 'New Button',
-      url: '',
-      icon: '✨',
-      hideIcon: false,
-      colorPreset: 'grey',
-      backgroundColor: '#9B9A97',
-      backgroundOpacity: 100,
-      outlineColor: '#9B9A97',
-      textColor: '#FFFFFF',
-      hoverBackgroundColor: '#FFFFFF',
-      hoverTextColor: '#9B9A97',
-      enableHoverHighlight: true,
+      id: makeButtonId(),
+      ...baseButtonProps
+    };
+    onChange([...value, newBtn]);
+    setActiveIndex(value.length);
+  };
+
+  const addButtonFromTemplate = (template) => {
+    const newBtn = {
+      id: makeButtonId(),
+      ...baseButtonProps,
+      ...template.config
     };
     onChange([...value, newBtn]);
     setActiveIndex(value.length);
@@ -407,7 +620,7 @@ const ButtonManager = ({ value, onChange }) => {
   const duplicateButton = (idx, e) => {
     e.stopPropagation();
     const newButtons = [...value];
-    const clone = { ...value[idx], id: `btn-${Date.now()}` };
+    const clone = { ...value[idx], id: makeButtonId() };
     newButtons.splice(idx + 1, 0, clone);
     onChange(newButtons);
   };
@@ -451,8 +664,9 @@ const ButtonManager = ({ value, onChange }) => {
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-2">
-        {value.map((btn, idx) => (
-          <div key={btn.id} className="bg-[#1A1D29] border border-gray-700 rounded-lg overflow-hidden transition-all hover:border-gray-600">
+        {value.map((btn, idx) => {
+          return (
+            <div key={btn.id} className="bg-[#1A1D29] border border-gray-700 rounded-lg overflow-hidden transition-all hover:border-gray-600">
             <div
               className="p-2.5 flex items-center justify-between cursor-pointer hover:bg-gray-800 transition-colors"
               onClick={() => setActiveIndex(activeIndex === idx ? null : idx)}
@@ -534,6 +748,54 @@ const ButtonManager = ({ value, onChange }) => {
                     <LinkIcon size={10} className="absolute left-2 top-2 text-gray-500" />
                   </div>
                 </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="text-[9px] uppercase font-bold text-gray-500 mb-1 block">Button Type</label>
+                    <select
+                      className="w-full bg-[#0f1115] border border-gray-700 text-gray-200 p-1.5 rounded text-xs outline-none focus:border-purple-500"
+                      value={btn.behaviorType || 'custom'}
+                      onChange={(e) => updateButton(idx, { behaviorType: e.target.value })}
+                    >
+                      {behaviorOptions.map(option => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-[9px] uppercase font-bold text-gray-500 mb-1 block">Variant</label>
+                    <select
+                      className="w-full bg-[#0f1115] border border-gray-700 text-gray-200 p-1.5 rounded text-xs outline-none focus:border-purple-500"
+                      value={btn.variant || 'solid'}
+                      onChange={(e) => updateButton(idx, { variant: e.target.value })}
+                    >
+                      {variantOptions.map(option => (
+                        <option key={option.value} value={option.value}>{option.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-[9px] uppercase font-bold text-gray-500 mb-1 block">Tooltip</label>
+                  <input
+                    className="w-full bg-[#0f1115] border border-gray-700 text-gray-200 p-1.5 rounded text-xs outline-none focus:border-purple-500"
+                    value={btn.tooltip || ''}
+                    onChange={(e) => updateButton(idx, { tooltip: e.target.value })}
+                    placeholder="Describe the action..."
+                  />
+                </div>
+
+                {btn.behaviorType === 'playlist' && (
+                  <div>
+                    <label className="text-[9px] uppercase font-bold text-gray-500 mb-1 block">Playlist Items (one per line)</label>
+                    <textarea
+                      className="w-full bg-[#0f1115] border border-gray-700 text-gray-200 p-1.5 rounded text-xs outline-none focus:border-purple-500"
+                      rows={3}
+                      value={btn.playlistText || ''}
+                      onChange={(e) => updateButton(idx, { playlistText: e.target.value })}
+                    />
+                  </div>
+                )}
 
                 <div className="flex items-center gap-2">
                   <input
@@ -646,7 +908,26 @@ const ButtonManager = ({ value, onChange }) => {
               </div>
             )}
           </div>
-        ))}
+          );
+        })}
+      </div>
+      <div className="p-3 bg-[#0F1115] border border-gray-800 rounded-lg space-y-2">
+        <div className="text-[10px] uppercase text-gray-400 font-bold tracking-wide">Quick Templates</div>
+        <div className="grid grid-cols-2 gap-2">
+          {BUTTON_ARCHETYPES.map(template => (
+            <button
+              key={template.id}
+              className="p-2 rounded-lg border border-white/10 bg-white/5 hover:border-purple-400 hover:bg-purple-500/10 transition flex items-center gap-2 text-left"
+              onClick={() => addButtonFromTemplate(template)}
+            >
+              <span className="text-lg">{template.icon}</span>
+              <div>
+                <div className="text-xs font-semibold text-white">{template.label}</div>
+                <div className="text-[10px] text-gray-400">{template.description}</div>
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
       <button
         onClick={addButton}
@@ -854,6 +1135,56 @@ const WidgetField = React.memo(({ field, value, onChange }) => {
     return <ButtonManager value={value || []} onChange={onChange} />;
   }
 
+  // NEW: multiselect field type
+  if (field.type === 'multiselect') {
+    const toggle = (optionValue) => {
+      const currentValues = Array.isArray(value) ? value : [];
+      if (currentValues.includes(optionValue)) {
+        onChange(currentValues.filter(v => v !== optionValue));
+      } else {
+        // Check maxItems limit
+        if (field.maxItems && currentValues.length >= field.maxItems) {
+          return; // Don't add more items if max reached
+        }
+        onChange([...currentValues, optionValue]);
+      }
+    };
+
+    return (
+      <div className="space-y-2">
+        <div className="flex justify-between items-center">
+          <label className="text-xs text-gray-400 font-bold">{field.label}</label>
+          {field.maxItems && (
+            <span className="text-xs text-gray-500">
+              {(value || []).length}/{field.maxItems} selected
+            </span>
+          )}
+        </div>
+        {field.helpText && (
+          <p className="text-xs text-gray-500">{field.helpText}</p>
+        )}
+        <div className="bg-gray-900 rounded border border-gray-700 p-2 space-y-1 max-h-64 overflow-y-auto">
+          {field.options.map(opt => {
+            const isChecked = (value || []).includes(opt.value);
+            const isDisabled = field.maxItems && !isChecked && (value || []).length >= field.maxItems;
+            return (
+              <div
+                key={opt.value}
+                className={`flex items-center gap-2 p-1 rounded ${isDisabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:bg-white/5'}`}
+                onClick={() => !isDisabled && toggle(opt.value)}
+              >
+                <div className={`w-4 h-4 border rounded flex items-center justify-center ${isChecked ? 'bg-purple-600 border-purple-600' : 'border-gray-500'}`}>
+                  {isChecked && <Check size={10} className="text-white" />}
+                </div>
+                <span className="text-xs text-gray-300">{opt.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   return null;
 });
 
@@ -980,94 +1311,6 @@ const AnalogClock = ({ time, size, type, colors, config }) => {
 // --- WIDGET REGISTRY ---
 
 const WIDGET_REGISTRY = {
-  logo: {
-    id: 'logo',
-    label: 'Brand Logo',
-    icon: <Sparkles className="w-4 h-4" />,
-    description: 'Display the official JaZeR brand logo.',
-    defaultConfig: {
-      imagePath: JAZER_BRAND.logo.paths.svg,
-      type: 'svg', // svg or gif
-      size: 200,
-      glow: true,
-      bgColor: 'transparent',
-    },
-    fields: [
-      { name: 'imagePath', label: 'Image Path/URL', type: 'text' },
-      { name: 'type', label: 'Format', type: 'select', options: [{ label: 'Static SVG', value: 'svg' }, { label: 'Animated GIF', value: 'gif' }] },
-      { name: 'size', label: 'Width (px)', type: 'number', min: 160, max: 800 },
-      { name: 'glow', label: 'Neon Glow', type: 'boolean' },
-    ],
-    Component: ({ config }) => {
-      const [error, setError] = useState(false);
-      const src = config.imagePath || (config.type === 'gif' ? JAZER_BRAND.logo.paths.gif : JAZER_BRAND.logo.paths.svg);
-
-      useEffect(() => { setError(false); }, [src]);
-
-      return (
-        <div className="flex items-center justify-center h-full w-full p-4">
-          {error ? (
-            <div className="text-center opacity-50 flex flex-col items-center">
-              <AlertTriangle className="w-12 h-12 mb-2 text-red-400" />
-              <p className="text-xs">Logo not found at path</p>
-            </div>
-          ) : (
-            <img
-              src={src}
-              alt="Logo"
-              onError={() => setError(true)}
-              style={{
-                width: `${Math.max(160, config.size)}px`,
-                maxWidth: '100%',
-                filter: config.glow ? `drop-shadow(0 0 ${JAZER_BRAND.glowBlur} ${JAZER_BRAND.colors.electricPurple})` : 'none'
-              }}
-            />
-          )}
-        </div>
-      );
-    },
-    generateHTML: (config) => `
-      <div style="display: flex; align-items: center; justify-content: center; height: 100%;">
-        <img src="${escapeHTML(config.imagePath)}" 
-             alt="Logo" 
-             onerror="this.style.display='none'; document.getElementById('err').style.display='block';"
-             style="width: ${Math.max(160, config.size)}px; max-width: 100%; ${config.glow ? `filter: drop-shadow(0 0 ${JAZER_BRAND.glowBlur} ${JAZER_BRAND.colors.electricPurple});` : ''}" />
-        <div id="err" style="display:none; color:red; text-align:center;">Logo not found</div>
-      </div>
-    `,
-    generateScript: () => ``
-  },
-  cosmic: {
-    id: 'cosmic',
-    label: 'Cosmic BG',
-    icon: <Sparkles className="w-4 h-4" />,
-    description: 'Animated cosmic background with glow.',
-    defaultConfig: {
-      showStars: true,
-      bgColor: JAZER_BRAND.colors.nightBlack
-    },
-    fields: [
-      { name: 'showStars', label: 'Show Stars', type: 'boolean' },
-    ],
-    Component: ({ config }) => (
-      <div className="w-full h-full relative overflow-hidden" style={{
-        background: `radial-gradient(circle at 50% 10%, ${JAZER_BRAND.ui.nebulaPurple} 0%, ${JAZER_BRAND.colors.nightBlack} 100%)`
-      }}>
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/20 to-blue-900/20 animate-pulse"></div>
-        {config.showStars && <div className="absolute inset-0" style={{ backgroundImage: 'radial-gradient(white 1px, transparent 1px)', backgroundSize: '50px 50px', opacity: 0.3 }}></div>}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-purple-500/30 rounded-full blur-3xl filter mix-blend-screen animate-pulse"></div>
-      </div>
-    ),
-    generateHTML: (config) => `
-      <div style="position: fixed; inset: 0; background: radial-gradient(circle at 50% 10%, ${JAZER_BRAND.ui.nebulaPurple} 0%, ${JAZER_BRAND.colors.nightBlack} 100%); overflow: hidden; z-index: -1;">
-         <div style="position: absolute; inset: 0; background: linear-gradient(135deg, rgba(139,92,246,0.2), rgba(59,130,246,0.2)); animation: pulse 4s infinite; will-change: opacity;"></div>
-         ${config.showStars ? '<div style="position: absolute; inset: 0; background-image: radial-gradient(white 1px, transparent 1px); background-size: 50px 50px; opacity: 0.3;"></div>' : ''}
-         <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 300px; height: 300px; background: rgba(139,92,246,0.3); border-radius: 50%; filter: blur(60px); animation: pulse 6s infinite alternate;"></div>
-         <style>@keyframes pulse { 0% { opacity: 0.5; } 100% { opacity: 1; } }</style>
-      </div>
-    `,
-    generateScript: () => ``
-  },
   clock: {
     ...clockConfig,
     icon: <Clock className="w-4 h-4" />,
@@ -1123,17 +1366,27 @@ const WIDGET_REGISTRY = {
     icon: <ListIcon className="w-4 h-4" />,
     defaultConfig: { title: 'To Do', items: 'Task 1\nTask 2', accentColor: JAZER_BRAND.colors.cosmicBlue, textColor: JAZER_BRAND.colors.graphite, bgColor: JAZER_BRAND.colors.stardustWhite },
     fields: [{ name: 'title', label: 'Title', type: 'text' }, { name: 'items', label: 'Items', type: 'textarea' }, { name: 'accentColor', label: 'Accent', type: 'color' }],
-    Component: ({ config }) => (
-      <div className="h-full w-full p-6 overflow-y-auto" style={{ background: config.bgColor, color: config.textColor }}>
-        <h3 className="font-bold mb-4 pb-2 border-b-2 text-lg" style={{ borderColor: config.accentColor }}>{config.title}</h3>
-        <ul className="space-y-2">{(config.items || '').split('\n').filter(Boolean).map((it, i) => <li key={i} className="flex gap-2"><div className="w-4 h-4 border rounded" style={{ borderColor: config.textColor }}></div>{it}</li>)}</ul>
-      </div>
-    ),
+    Component: ({ config }) => {
+      const items = (config.items || '').split('\n').filter(Boolean);
+      return (
+        <div className="h-full w-full p-6 overflow-y-auto" style={{ background: config.bgColor, color: config.textColor }}>
+          <h3 className="font-bold mb-4 pb-2 border-b-2 text-lg" style={{ borderColor: config.accentColor }}>{config.title}</h3>
+          <ul className="space-y-2">
+            {items.map((it, i) => (
+              <li key={i} className="flex gap-2 items-center">
+                <div className="w-4 h-4 border rounded" style={{ borderColor: config.accentColor }}></div>
+                <span>{it}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      );
+    },
     generateHTML: (config) => `
-      <div style="padding:24px; height:100%; overflow-y:auto;">
+      <div style="padding:24px; height:100%; overflow-y:auto; background:${config.bgColor}; color:${config.textColor};">
         <h3 style="font-weight:bold; margin-bottom:16px; padding-bottom:8px; border-bottom:2px solid ${config.accentColor};">${escapeHTML(config.title)}</h3>
-        <ul style="list-style:none; padding:0;">
-          ${(config.items || '').split('\n').filter(Boolean).map(i => `<li style="display:flex; gap:12px; margin-bottom:8px; cursor:pointer;" onclick="this.style.opacity = this.style.opacity === '0.5' ? '1' : '0.5'"><div style="width:16px; height:16px; border:2px solid currentColor; border-radius:4px;"></div><span>${escapeHTML(i)}</span></li>`).join('')}
+        <ul style="list-style:none; padding:0; margin:0;">
+          ${(config.items || '').split('\n').filter(Boolean).map(i => `<li style="display:flex; gap:12px; margin-bottom:8px; cursor:pointer; align-items:center;" onclick="this.style.opacity = this.style.opacity === '0.5' ? '1' : '0.5'"><div style="width:16px; height:16px; border:2px solid ${config.accentColor}; border-radius:4px;"></div><span>${escapeHTML(i)}</span></li>`).join('')}
         </ul>
       </div>
     `,
@@ -1145,36 +1398,174 @@ const WIDGET_REGISTRY = {
     icon: <Timer className="w-4 h-4" />,
     defaultConfig: { workTime: 25, breakTime: 5, accentColor: JAZER_BRAND.colors.neonPink, textColor: JAZER_BRAND.colors.graphite, bgColor: JAZER_BRAND.colors.stardustWhite },
     fields: [{ name: 'workTime', label: 'Work', type: 'number' }, { name: 'breakTime', label: 'Break', type: 'number' }, { name: 'accentColor', label: 'Color', type: 'color' }],
-    Component: ({ config }) => (
-      <div className="flex flex-col items-center justify-center h-full" style={{ background: config.bgColor, color: config.textColor }}>
-        <div className="text-4xl font-bold mb-4">{config.workTime}:00</div>
-        <button className="px-6 py-2 rounded-full text-white" style={{ background: config.accentColor }}>Start</button>
-      </div>
-    ),
+    Component: ({ config }) => {
+      const workMinutes = Math.max(1, parseInt(config.workTime, 10) || 25);
+      const breakMinutes = Math.max(1, parseInt(config.breakTime, 10) || 5);
+      const workSeconds = workMinutes * 60;
+      const breakSeconds = breakMinutes * 60;
+      const [remaining, setRemaining] = useState(workSeconds);
+      const [isRunning, setIsRunning] = useState(false);
+      const [isWorkPhase, setIsWorkPhase] = useState(true);
+      const phaseRef = useRef(isWorkPhase);
+
+      useEffect(() => {
+        phaseRef.current = isWorkPhase;
+      }, [isWorkPhase]);
+
+      useEffect(() => {
+        setIsRunning(false);
+        setIsWorkPhase(true);
+        phaseRef.current = true;
+        setRemaining(workSeconds);
+      }, [workSeconds, breakSeconds]);
+
+      useEffect(() => {
+        if (!isRunning) return undefined;
+        const interval = setInterval(() => {
+          setRemaining((prev) => {
+            if (prev > 1) {
+              return prev - 1;
+            }
+            const nextPhaseIsWork = !phaseRef.current;
+            phaseRef.current = nextPhaseIsWork;
+            setIsWorkPhase(nextPhaseIsWork);
+            return nextPhaseIsWork ? workSeconds : breakSeconds;
+          });
+        }, 1000);
+        return () => clearInterval(interval);
+      }, [isRunning, workSeconds, breakSeconds]);
+
+      const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+        const secs = (seconds % 60).toString().padStart(2, '0');
+        return `${mins}:${secs}`;
+      };
+
+      const toggleTimer = () => {
+        setIsRunning((prev) => !prev);
+      };
+
+      const resetTimer = () => {
+        setIsRunning(false);
+        setIsWorkPhase(true);
+        phaseRef.current = true;
+        setRemaining(workSeconds);
+      };
+
+      return (
+        <div className="flex flex-col items-center justify-center h-full gap-4 text-center" style={{ background: config.bgColor, color: config.textColor }}>
+          <div className="text-sm font-semibold uppercase tracking-widest" style={{ color: config.accentColor }}>
+            {isWorkPhase ? 'Work' : 'Break'} Session
+          </div>
+          <div className="text-5xl font-bold tabular-nums">{formatTime(remaining)}</div>
+          <div className="flex gap-3">
+            <button
+              className="px-6 py-2 rounded-full text-white font-semibold"
+              style={{ background: config.accentColor }}
+              onClick={toggleTimer}
+            >
+              {isRunning ? 'Pause' : 'Start'}
+            </button>
+            <button
+              className="px-6 py-2 rounded-full border font-semibold"
+              style={{ borderColor: config.accentColor, color: config.accentColor }}
+              onClick={resetTimer}
+            >
+              Reset
+            </button>
+          </div>
+        </div>
+      );
+    },
     generateHTML: (config) => `
-      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%;">
-        <div id="timer" style="font-size:48px; font-weight:bold; margin-bottom:16px;">${config.workTime}:00</div>
-        <button onclick="toggle()" id="btn" style="background:${config.accentColor}; color:white; border:none; padding:10px 24px; border-radius:99px; font-weight:bold; cursor:pointer;">Start</button>
+      <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; gap:16px; text-align:center;">
+        <div id="phase" style="font-size:14px; font-weight:600; text-transform:uppercase; letter-spacing:0.2em; color:${config.accentColor};">Work Session</div>
+        <div id="timer" style="font-size:48px; font-weight:bold; margin-bottom:8px; font-family:'Courier New', monospace;">${String(config.workTime).padStart(2, '0')}:00</div>
+        <div style="display:flex; gap:12px;">
+          <button onclick="togglePomodoro()" id="btn" style="background:${config.accentColor}; color:white; border:none; padding:10px 24px; border-radius:999px; font-weight:bold; cursor:pointer;">Start</button>
+          <button onclick="resetPomodoro()" style="background:transparent; color:${config.accentColor}; border:2px solid ${config.accentColor}; padding:10px 24px; border-radius:999px; font-weight:bold; cursor:pointer;">Reset</button>
+        </div>
       </div>
     `,
     generateScript: (config) => `
-      let time = ${config.workTime * 60}; let active = false; let timer;
-      const el = document.getElementById('timer'); const btn = document.getElementById('btn');
-      function fmt(s) { return Math.floor(s/60).toString().padStart(2,'0')+':'+(s%60).toString().padStart(2,'0'); }
-      function toggle() {
-        active = !active; btn.innerText = active ? 'Pause' : 'Start';
-        if(active) timer = setInterval(() => { if(time>0){time--; el.innerText=fmt(time)}else{clearInterval(timer); alert('Done!')} }, 1000);
-        else clearInterval(timer);
-      }
+      (function() {
+        const workMinutes = Math.max(1, parseInt(${JSON.stringify(config.workTime)}, 10) || 25);
+        const breakMinutes = Math.max(1, parseInt(${JSON.stringify(config.breakTime)}, 10) || 5);
+        const workSeconds = workMinutes * 60;
+        const breakSeconds = breakMinutes * 60;
+        let remaining = workSeconds;
+        let isRunning = false;
+        let isWorkPhase = true;
+        let timerId = null;
+        const timerEl = document.getElementById('timer');
+        const phaseEl = document.getElementById('phase');
+        const btn = document.getElementById('btn');
+
+        function format(seconds) {
+          const mins = Math.floor(seconds / 60).toString().padStart(2, '0');
+          const secs = (seconds % 60).toString().padStart(2, '0');
+          return mins + ':' + secs;
+        }
+
+        function updateDisplay() {
+          timerEl.textContent = format(remaining);
+          phaseEl.textContent = (isWorkPhase ? 'Work' : 'Break') + ' Session';
+        }
+
+        function switchPhase() {
+          isWorkPhase = !isWorkPhase;
+          remaining = isWorkPhase ? workSeconds : breakSeconds;
+          updateDisplay();
+        }
+
+        function tick() {
+          if (remaining > 0) {
+            remaining -= 1;
+            updateDisplay();
+          } else {
+            switchPhase();
+          }
+        }
+
+        window.togglePomodoro = function togglePomodoro() {
+          isRunning = !isRunning;
+          btn.textContent = isRunning ? 'Pause' : 'Start';
+          if (isRunning) {
+            timerId = setInterval(tick, 1000);
+          } else if (timerId) {
+            clearInterval(timerId);
+            timerId = null;
+  }
+};
+
+        window.resetPomodoro = function resetPomodoro() {
+          if (timerId) {
+            clearInterval(timerId);
+            timerId = null;
+          }
+          isRunning = false;
+          isWorkPhase = true;
+          remaining = workSeconds;
+          btn.textContent = 'Start';
+          updateDisplay();
+        };
+
+        updateDisplay();
+      })();
     `
   },
-  lifeProgress: {
-    ...lifeProgressConfig,
-    icon: <BarChart3 className="w-4 h-4" />,
-    Component: LifeProgressWidget,
-    generateHTML: generateLifeProgressHTML,
-    generateScript: generateLifeProgressScript
-  },
+};
+
+const WIDGET_CATEGORIES = {
+  clock: 'Time & Productivity',
+  countdown: 'Time & Productivity',
+  pomodoro: 'Time & Productivity',
+  simpleList: 'Time & Productivity',
+  weather: 'Data & Information',
+  quotes: 'Data & Information',
+  counter: 'Interactive',
+  newButtonGenerator: 'Interactive',
+  imageGallery: 'Media'
 };
 
 // --- EXPORT MODAL COMPONENT ---
@@ -1269,24 +1660,37 @@ const ExportModal = ({ isOpen, onClose, widgetDef, config }) => {
 
 // Resizable Preview Panel Component
 const ResizablePreviewPanel = ({ 
-  activeBrandId, 
-  config, 
-  activeWidgetId, 
-  debouncedConfig, 
+  activeBrandId,
+  config,
+  activeWidgetId,
+  debouncedConfig,
   handleConfigChange, 
   brandTheme, 
   ActiveWidget,
   showExport,
-  setShowExport 
+  setShowExport,
+  onCustomizeRequest,
+  upgradeItems
 }) => {
   const [previewWidth, setPreviewWidth] = useState(800);
   const [previewHeight, setPreviewHeight] = useState(450);
   const [isResizing, setIsResizing] = useState(false);
   const previewContainerRef = useRef(null);
+  const previewBrandTheme = brandTheme || debouncedConfig?.brandThemeSnapshot || config.brandThemeSnapshot;
+  const presetSizes = useMemo(() => ([
+    { id: 'phone', label: 'Phone', width: 360, height: 640 },
+    { id: 'tablet', label: 'Tablet', width: 820, height: 640 },
+    { id: 'desktop', label: 'Desktop', width: 1100, height: 640 }
+  ]), []);
 
   const startResize = (direction, e) => {
     e.preventDefault();
     setIsResizing(direction);
+  };
+
+  const applyPresetSize = (preset) => {
+    setPreviewWidth(preset.width);
+    setPreviewHeight(preset.height);
   };
 
   useEffect(() => {
@@ -1331,25 +1735,50 @@ const ResizablePreviewPanel = ({
         background: activeBrandId === 'jazer' ? `radial-gradient(circle at 50% 10%, ${JAZER_BRAND.ui.nebulaPurple} 0%, ${JAZER_BRAND.colors.nightBlack} 100%)` : '#f5f5f5',
         boxShadow: activeBrandId === 'jazer' ? JAZER_BRAND.glow : 'none'
       }}>
-        <div 
+        <div
           className="shadow-2xl rounded-xl overflow-hidden relative group"
-          style={{ 
+          style={{
             width: `${previewWidth}px`,
             height: `${previewHeight}px`,
-            backgroundColor: config.bgColor, 
-            border: '2px solid var(--jazer-cosmic-blue)', 
+            maxWidth: '100%',
+            maxHeight: 'min(80vh, 720px)',
+            backgroundColor: config.bgColor,
+            border: '2px solid var(--jazer-cosmic-blue)',
             boxShadow: 'var(--jazer-glow-blue), 0 20px 40px rgba(0,0,0,0.4)',
             transition: isResizing ? 'none' : 'all 0.2s ease'
           }}
         >
+          <div className="absolute top-3 left-3 z-20 flex gap-2">
+            {presetSizes.map((preset) => {
+              const isActive = Math.round(previewWidth) === preset.width && Math.round(previewHeight) === preset.height;
+              return (
+                <button
+                  key={preset.id}
+                  type="button"
+                  onClick={() => applyPresetSize(preset)}
+                  className={`px-3 py-1 rounded-full text-[11px] uppercase tracking-[0.3em] border transition ${isActive ? 'border-white text-white bg-white/20' : 'border-white/20 text-white/70 bg-black/30 hover:border-white/40 hover:text-white'}`}
+                >
+                  {preset.label}
+                </button>
+              );
+            })}
+          </div>
           <WidgetErrorBoundary key={activeWidgetId}>
             <ActiveWidget.Component
               config={debouncedConfig}
               onConfigChange={handleConfigChange}
               brand={JAZER_BRAND}
-              brandTheme={brandTheme}
+              brandTheme={previewBrandTheme}
+              onCustomizeRequest={onCustomizeRequest}
             />
           </WidgetErrorBoundary>
+
+          {Array.isArray(upgradeItems) && upgradeItems.length > 0 && (
+            <UpgradeOrbRadial
+              title={activeWidgetId === 'newButtonGenerator' ? 'Button Upgrades' : 'Widget Upgrades'}
+              items={upgradeItems}
+            />
+          )}
           
           {/* Resize Handles */}
           {/* Right handle */}
@@ -1416,93 +1845,332 @@ const ResizablePreviewPanel = ({
   );
 };
 
-function WidgetLandingPage({ onSelect, onBrandGenerator }) {
+// Export WIDGET_REGISTRY for use in GlobalNavigation
+export { WIDGET_REGISTRY };
+
+function WidgetLandingPage({ onSelect, onBrandGenerator, setSearchInputRef }) {
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchInputLocalRef = useRef(null);
+
+  // Set search input ref for parent keyboard shortcuts
+  useEffect(() => {
+    if (setSearchInputRef && searchInputLocalRef.current) {
+      setSearchInputRef(searchInputLocalRef.current);
+    }
+  }, [setSearchInputRef]);
+
+  const widgetList = useMemo(() => (
+    Object.values(WIDGET_REGISTRY).map(widget => ({
+      ...widget,
+      category: WIDGET_CATEGORIES[widget.id] || 'Other'
+    }))
+  ), []);
+
+  const categories = useMemo(() => (
+    ['all', ...Array.from(new Set(widgetList.map(widget => widget.category)))]
+  ), [widgetList]);
+
+  const featuredWidgetIds = ['weather', 'clock', 'newButtonGenerator'];
+  const featuredWidgets = useMemo(
+    () => widgetList.filter(widget => featuredWidgetIds.includes(widget.id)),
+    [widgetList]
+  );
+
+  const filteredWidgets = useMemo(() => {
+    const normalizedQuery = searchQuery.trim().toLowerCase();
+    return widgetList.filter(widget => {
+      const matchesCategory = selectedCategory === 'all' || widget.category === selectedCategory;
+      const matchesQuery = !normalizedQuery ||
+        [widget.label, widget.description]
+          .filter(Boolean)
+          .some(text => text.toLowerCase().includes(normalizedQuery));
+      return matchesCategory && matchesQuery;
+    });
+  }, [widgetList, selectedCategory, searchQuery]);
+
+  const widgetBadges = {
+    weather: 'Most Advanced',
+    clock: 'Fan Favorite',
+    countdown: 'New Animation',
+    newButtonGenerator: 'Workflow Booster',
+    imageGallery: 'Creator Ready',
+    quotes: 'API Connected',
+    pomodoro: 'Focus Mode'
+  };
+
+  const heroStats = [
+    { label: 'Widgets', value: '9', subLabel: 'Final list' },
+    { label: 'Categories', value: '4', subLabel: 'Time, Data, Media, Interactive' },
+    { label: 'API Integrations', value: '2', subLabel: 'Weather + Quotes' },
+    { label: 'Brand Kits', value: '∞', subLabel: 'Generator-powered' }
+  ];
+
+  const howItWorks = [
+    {
+      icon: <Layout className="w-5 h-5 text-purple-300" />,
+      title: 'Choose a widget',
+      copy: 'Clock, Weather, Buttons, and more with presets tuned to Notion.'
+    },
+    {
+      icon: <Palette className="w-5 h-5 text-cyan-300" />,
+      title: 'Apply your brand',
+      copy: 'Upload a logo once and sync its palette across every widget.'
+    },
+    {
+      icon: <Download className="w-5 h-5 text-pink-300" />,
+      title: 'Export / embed',
+      copy: 'Copy the embed link or HTML snippet directly into Notion.'
+    }
+  ];
+
+  const testimonials = [
+    {
+      quote: '“The builder finally feels as premium as the widgets themselves. I can move from idea to embedded widget in minutes.”',
+      author: 'Nara · Product Ops'
+    },
+    {
+      quote: '“Brand kit syncing blew my mind—upload logo, click apply, every widget updates instantly.”',
+      author: 'Lewis · Creator'
+    },
+    {
+      quote: '“Favorite part is the Button Generator. Macro + toggle modes mean I can run my workflows without leaving Notion.”',
+      author: 'Mika · Studio Lead'
+    }
+  ];
+
   return (
-    <div className="min-h-screen p-8 md:p-16 flex flex-col items-center" style={{ backgroundColor: 'var(--jazer-night-black)', color: 'var(--jazer-stardust-white)' }}>
-      <div className="max-w-6xl w-full space-y-12">
-        <div className="text-center space-y-4">
-          <div className="inline-flex items-center justify-center mb-6 animate-pulse-neon">
-            <img src="/assets/branding/app-icon.svg" className="w-20 h-20 drop-shadow-[0_0_15px_rgba(139,92,246,0.5)]" alt="Notion Widget Builder Icon" />
+    <div className="min-h-screen px-4 sm:px-6 lg:px-16 py-8 flex flex-col items-center" style={{ backgroundColor: 'var(--jazer-night-black)', color: 'var(--jazer-stardust-white)' }}>
+      <div className="w-full max-w-6xl space-y-14">
+        {/* Hero */}
+        <section className="space-y-6 text-center">
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            <span className="px-3 py-1 text-[11px] uppercase tracking-[0.3em] rounded-full border border-white/15 text-neutral-300">Final Widget List v1.2</span>
+            <span className="px-3 py-1 text-[11px] uppercase tracking-[0.3em] rounded-full border border-white/15 text-neutral-300">JaZeR Neon Ready</span>
           </div>
-          <img src="/assets/branding/app-logo.svg" alt="Notion Widget Builder" className="h-16 md:h-24 mx-auto mb-4 drop-shadow-[0_0_10px_rgba(139,92,246,0.5)]" />
-          <p className="text-xl max-w-2xl mx-auto" style={{ color: 'var(--jazer-soft-slate)' }}>
-            Premium, customizable widgets for your Notion workspace. <span style={{ color: 'var(--jazer-neon-pink)' }}>Cyberpunk aesthetics included.</span>
+          <div className="inline-flex items-center justify-center p-3 rounded-full animate-pulse-neon mx-auto" style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', border: '1px solid var(--jazer-electric-purple)' }}>
+            <Sparkles className="w-8 h-8" style={{ color: 'var(--jazer-electric-purple)' }} />
+          </div>
+          <h1 className="text-4xl md:text-6xl font-black tracking-tight gradient-text neon-text" style={{ fontFamily: 'Orbitron, sans-serif' }}>
+            Design-grade Notion Widgets
+          </h1>
+          <p className="text-lg md:text-xl max-w-3xl mx-auto leading-relaxed" style={{ color: 'var(--jazer-soft-slate)' }}>
+            Shuttle nine premium widgets—clock, weather, pomodoro, button generator, and more—directly into Notion. Every control respects the JaZeR neon system, responsive layouts, and your custom brand kit.
           </p>
-        </div>
+          <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4">
+            <button
+              onClick={() => onSelect('clock')}
+              className="px-8 py-3 rounded-full text-sm font-bold tracking-[0.2em] uppercase bg-gradient-to-r from-purple-500 to-pink-500 hover:scale-105 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-300 w-full sm:w-auto text-center"
+            >
+              Start Building
+            </button>
+            <button
+              onClick={onBrandGenerator}
+              className="px-8 py-3 rounded-full text-sm font-bold tracking-[0.2em] uppercase border border-white/20 text-neutral-200 hover:border-cyan-400 hover:text-white transition flex items-center gap-2 justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300 w-full sm:w-auto"
+            >
+              <Palette className="w-4 h-4" /> Sync Brand Kit
+            </button>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {heroStats.map((stat) => (
+              <div key={stat.label} className="p-4 rounded-xl border border-white/10 bg-white/5">
+                <div className="text-3xl font-black">{stat.value}</div>
+                <div className="text-xs uppercase tracking-[0.3em] text-neutral-400 mt-1">{stat.label}</div>
+                <p className="text-[11px] text-neutral-400 mt-1">{stat.subLabel}</p>
+              </div>
+            ))}
+          </div>
+        </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-          {Object.values(WIDGET_REGISTRY).map((widget) => (
-            <div key={widget.id} className="group rounded-2xl p-1 transition-all duration-300 hover:-translate-y-2 card-neon">
-              <div className="h-full rounded-xl p-6 flex flex-col relative overflow-hidden" style={{ backgroundColor: 'var(--jazer-graphite)' }}>
-                <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
-                  {React.cloneElement(widget.icon, { className: "w-24 h-24", style: { color: 'var(--jazer-electric-purple)' } })}
+        {/* Featured widgets */}
+        <section className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-400">Spotlight</p>
+              <h2 className="text-2xl font-bold">Featured widgets</h2>
+            </div>
+            <button
+              onClick={() => onSelect('weather')}
+              className="px-4 py-2 rounded-full border border-white/15 text-sm text-neutral-200 hover:border-purple-300 hover:text-white transition flex items-center gap-2 self-start sm:self-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400"
+            >
+              Explore builder <ArrowLeft className="w-4 h-4 rotate-180" />
+            </button>
+          </div>
+          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6 md:overflow-visible">
+            {featuredWidgets.map(widget => (
+              <div key={widget.id} className="rounded-2xl p-6 border border-white/10 bg-gradient-to-br from-white/10 to-transparent backdrop-blur min-w-[260px] snap-center md:min-w-0">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/10 text-purple-200">
+                    {widget.icon}
+                  </div>
+                  {widgetBadges[widget.id] && (
+                    <span className="px-3 py-1 rounded-full text-[11px] uppercase tracking-widest bg-purple-500/20 border border-purple-400 text-purple-200">
+                      {widgetBadges[widget.id]}
+                    </span>
+                  )}
                 </div>
-
-                <div className="w-12 h-12 rounded-lg flex items-center justify-center mb-4 transition-colors" style={{ backgroundColor: 'rgba(59, 130, 246, 0.1)', color: 'var(--jazer-cosmic-blue)' }}>
-                  {widget.icon}
-                </div>
-
-                <h3 className="text-xl font-bold mb-2 neon-text-blue" style={{ fontFamily: 'Orbitron, sans-serif' }}>{widget.label}</h3>
-                <p className="text-sm mb-6 flex-1 leading-relaxed" style={{ color: 'var(--jazer-soft-slate)' }}>
-                  {widget.description || `Create a beautiful ${widget.label.toLowerCase()} widget for your Notion pages.`}
-                </p>
-
+                <h3 className="text-xl font-semibold mb-2">{widget.label}</h3>
+                <p className="text-sm text-neutral-300 mb-6">{widget.description || `Create a beautiful ${widget.label.toLowerCase()} widget for your Notion pages.`}</p>
                 <button
                   onClick={() => onSelect(widget.id)}
-                  className="w-full py-3 px-4 rounded-lg font-bold text-sm flex items-center justify-center gap-2 transition-all btn-neon"
-                  style={{ backgroundColor: 'var(--jazer-electric-purple)', color: 'var(--jazer-stardust-white)' }}
+                  className="w-full py-2 rounded-lg border border-white/15 text-sm font-semibold text-white hover:border-purple-400 transition"
                 >
-                  Build Widget <ArrowLeft className="w-4 h-4 rotate-180" />
+                  Customize {widget.label}
                 </button>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        </section>
 
-        {/* Brand Theme Generator Card */}
-        <div className="mt-12 p-1 rounded-2xl transition-all duration-300 hover:-translate-y-2" style={{ background: 'linear-gradient(135deg, var(--jazer-electric-purple), var(--jazer-neon-pink))' }}>
-          <div className="rounded-xl p-8" style={{ backgroundColor: 'var(--jazer-graphite)' }}>
-            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-              <div className="flex-1">
+        {/* Widget directory */}
+        <section className="space-y-6">
+          <div className="flex flex-wrap items-center gap-4">
+            <div
+              className="flex gap-2 w-full overflow-x-auto pb-2 pr-4"
+              style={{ WebkitOverflowScrolling: 'touch' }}
+              role="tablist"
+              aria-label="Widget categories"
+            >
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  type="button"
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-3 py-1.5 rounded-full text-[11px] uppercase tracking-widest border transition ${selectedCategory === category ? 'border-purple-400 text-white bg-purple-500/20' : 'border-white/15 text-neutral-300 hover:border-purple-300 hover:text-white'} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400`}
+                  aria-pressed={selectedCategory === category}
+                  role="tab"
+                >
+                  {category === 'all' ? 'All widgets' : category}
+                </button>
+              ))}
+            </div>
+            <div className="relative ml-auto">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+              <input
+                ref={searchInputLocalRef}
+                type="text"
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search widgets..."
+                className="pl-9 pr-3 py-2 rounded-full bg-white/5 border border-interactive text-sm text-white placeholder:text-neutral-500 focus-ring"
+                aria-label="Search widgets"
+              />
+            </div>
+          </div>
+
+          <div className="py-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredWidgets.map(widget => (
+              <div key={widget.id} className="rounded-2xl border border-white/10 bg-white/5 p-5 flex flex-col">
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="p-3 rounded-full" style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', border: '1px solid var(--jazer-electric-purple)' }}>
-                    <Sparkles className="w-6 h-6" style={{ color: 'var(--jazer-electric-purple)' }} />
+                  <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-purple-200">
+                    {widget.icon}
                   </div>
-                  <h3 className="text-2xl font-bold neon-text" style={{ fontFamily: 'Orbitron, sans-serif' }}>BRAND THEME GENERATOR</h3>
+                  <div>
+                    <h3 className="text-lg font-semibold">{widget.label}</h3>
+                    <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-400">{widget.category}</p>
+                  </div>
                 </div>
-                <p className="text-base leading-relaxed" style={{ color: 'var(--jazer-soft-slate)' }}>
-                  Upload your logo and automatically generate custom color presets for <strong style={{ color: 'var(--jazer-neon-pink)' }}>ALL widgets</strong>. Create a unified brand experience across your entire Notion workspace.
-                </p>
-                <div className="flex items-center gap-4 mt-4">
-                  <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--jazer-aether-teal)' }}>
-                    <Check className="w-4 h-4" />
-                    <span>8 Auto-Generated Presets</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--jazer-aether-teal)' }}>
-                    <Check className="w-4 h-4" />
-                    <span>Applies to All Widgets</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--jazer-aether-teal)' }}>
-                    <Check className="w-4 h-4" />
-                    <span>Save & Export</span>
-                  </div>
+                <p className="text-sm text-neutral-300 flex-1">{widget.description || `Create a ${widget.label.toLowerCase()} widget.`}</p>
+                <button
+                  onClick={() => onSelect(widget.id)}
+                  className="mt-4 w-full py-2 rounded-lg bg-purple-500/20 border border-purple-400 text-sm font-semibold text-purple-50 hover:bg-purple-500/30 transition"
+                >
+                  Build {widget.label}
+                </button>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Brand kit call to action */}
+        <section className="p-1 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400">
+          <div className="rounded-2xl bg-[#0F111C] p-6 sm:p-8 flex flex-col lg:flex-row gap-8 items-start w-full">
+            <div className="flex-1 space-y-4 w-full">
+              <div className="flex items-center gap-3">
+                <div className="p-3 rounded-full bg-purple-500/20 border border-purple-300/40">
+                  <Sparkles className="w-6 h-6 text-purple-200" />
+                </div>
+                <div>
+                  <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-400">Brand Kit</p>
+                  <h3 className="text-2xl font-bold">Generate once, sync everywhere</h3>
                 </div>
               </div>
+              <p className="text-sm text-neutral-200 max-w-2xl">
+                Upload a logo, capture its palette, and notch it into every widget automatically. The generator writes to local storage so your theme loads every time you reopen the builder.
+              </p>
+              <div className="grid sm:grid-cols-2 gap-3 text-sm text-neutral-200">
+                <div className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-400" />
+                  8+ curated presets per brand
+                </div>
+                <div className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-400" />
+                  Auto-applies to light + dark modes
+                </div>
+                <div className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-400" />
+                  Palette chips ready for export
+                </div>
+                <div className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-400" />
+                  One-click re-launch from builder
+                </div>
+              </div>
+            </div>
+            <div className="flex flex-col gap-3 w-full lg:w-auto">
               <button
                 onClick={onBrandGenerator}
-                className="px-8 py-4 rounded-lg font-bold text-lg flex items-center justify-center gap-3 transition-all btn-neon hover:scale-105 whitespace-nowrap"
-                style={{ backgroundColor: 'var(--jazer-electric-purple)', color: 'var(--jazer-stardust-white)' }}
+                className="px-8 py-3 rounded-full font-bold tracking-[0.2em] uppercase bg-white text-black hover:scale-105 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               >
-                <Sparkles className="w-5 h-5" />
-                Generate Theme
-                <ChevronRight className="w-5 h-5" />
+                Launch Generator
+              </button>
+              <button
+                onClick={() => onSelect('newButtonGenerator')}
+                className="px-8 py-3 rounded-full font-bold tracking-[0.2em] uppercase border border-white/20 text-white hover:border-cyan-300 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+              >
+                Preview With Buttons
               </button>
             </div>
           </div>
-        </div>
+        </section>
 
-        <footer className="text-center pt-12 text-sm" style={{ color: 'var(--jazer-soft-slate)' }}>
-          <p>© 2025 JaZeR. All rights reserved.</p>
+        {/* How it works */}
+        <section className="space-y-6">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-400">Workflow</p>
+            <h2 className="text-2xl font-bold">How builders ship faster</h2>
+          </div>
+          <div className="grid md:grid-cols-3 gap-4">
+            {howItWorks.map((step) => (
+              <div key={step.title} className="rounded-xl border border-white/10 bg-white/5 p-5 space-y-3">
+                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+                  {step.icon}
+                </div>
+                <h3 className="text-lg font-semibold">{step.title}</h3>
+                <p className="text-sm text-neutral-300">{step.copy}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Testimonials */}
+        <section className="space-y-6">
+          <div>
+            <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-400">Loved by teams</p>
+            <h2 className="text-2xl font-bold">Feedback from early builders</h2>
+          </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {testimonials.map((item) => (
+              <div key={item.author} className="rounded-xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent p-5">
+                <p className="text-sm text-neutral-200 leading-relaxed">{item.quote}</p>
+                <p className="mt-4 text-xs uppercase tracking-[0.3em] text-neutral-400">{item.author}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <footer className="text-center pt-8 text-sm text-neutral-500">
+          <p>© {new Date().getFullYear()} JaZeR. Built for the Notion Wiz community.</p>
         </footer>
       </div>
     </div>
@@ -1511,16 +2179,171 @@ function WidgetLandingPage({ onSelect, onBrandGenerator }) {
 
 // --- FILE: NotionWidgetBuilder.jsx ---
 
-function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme }) {
+const applyBrandThemeToConfig = (baseConfig, theme) => {
+  if (!theme) return baseConfig;
+  const updated = { ...baseConfig };
+
+  updated.brandThemeSnapshot = {
+    ...theme,
+    appliedAt: theme.appliedAt || new Date().toISOString()
+  };
+
+  if (theme.backgroundColor) {
+    updated.bgColor = theme.backgroundColor;
+    if (updated.backgroundColor !== undefined) {
+      updated.backgroundColor = theme.backgroundColor;
+    }
+  }
+
+  if (theme.textColor && updated.textColor !== undefined) {
+    updated.textColor = theme.textColor;
+  }
+
+  if (theme.accentColor && updated.accentColor !== undefined) {
+    updated.accentColor = theme.accentColor;
+  }
+
+  if (updated.lightMode) {
+    updated.lightMode = {
+      ...updated.lightMode,
+      backgroundColor: theme.backgroundColor || updated.lightMode.backgroundColor,
+      clockColor: theme.clockColor || updated.lightMode.clockColor,
+      digitColor: theme.digitColor || theme.clockColor || updated.lightMode.digitColor,
+      textColor: theme.textColor || updated.lightMode.textColor
+    };
+  }
+
+  if (updated.darkMode) {
+    updated.darkMode = {
+      ...updated.darkMode,
+      backgroundColor: theme.backgroundColor || updated.darkMode.backgroundColor,
+      clockColor: theme.clockColor || updated.darkMode.clockColor,
+      digitColor: theme.digitColor || theme.clockColor || updated.darkMode.digitColor,
+      textColor: theme.textColor || updated.darkMode.textColor
+    };
+  }
+
+  if (theme.glow !== undefined && updated.glowEffect !== undefined) {
+    updated.glowEffect = theme.glow;
+  }
+
+  if (theme.texture && updated.backgroundTexture !== undefined) {
+    updated.backgroundTexture = theme.texture;
+  }
+
+  return updated;
+};
+
+const applyBrandToConfig = (baseConfig, brandId, customTheme) => {
+  if (brandId === 'custom' && customTheme) {
+    return applyBrandThemeToConfig(baseConfig, customTheme);
+  }
+
+  if (brandId === 'none') {
+    const cleared = { ...baseConfig };
+    delete cleared.brandThemeSnapshot;
+    return cleared;
+  }
+
+  const brand = BRAND_KITS[brandId];
+  if (!brand) {
+    const cleared = { ...baseConfig };
+    delete cleared.brandThemeSnapshot;
+    return cleared;
+  }
+
+  const newConfig = { ...baseConfig };
+  delete newConfig.brandThemeSnapshot;
+  if (brand.fontFamily) newConfig.fontFamily = brand.fontFamily;
+  if (brand.bgColor) newConfig.bgColor = brand.bgColor;
+  if (brand.textColor) newConfig.textColor = brand.textColor;
+  if (brand.accentColor) newConfig.accentColor = brand.accentColor;
+
+  if (brandId === 'jazer') {
+    if (newConfig.glowEffect !== undefined) newConfig.glowEffect = true;
+    if (newConfig.gradientText !== undefined) newConfig.gradientText = true;
+  }
+
+  return newConfig;
+};
+
+function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBrandThemeUpdate, onLaunchBrandGenerator }) {
+  const normalizedGlobalTheme = useMemo(
+    () => (globalBrandTheme ? normalizeBrandTheme(globalBrandTheme) : null),
+    [globalBrandTheme]
+  );
   const [activeWidgetId, setActiveWidgetId] = useState(initialWidgetId);
-  const [activeBrandId, setActiveBrandId] = useState('none');
-  const [config, setConfig] = useState(WIDGET_REGISTRY[initialWidgetId].defaultConfig);
-  const [brandTheme, setBrandTheme] = useState(globalBrandTheme); // Store extracted brand colors
+  const [activeBrandId, setActiveBrandId] = useState(normalizedGlobalTheme ? 'custom' : 'none');
+  const [config, setConfig] = useState(() => {
+    const defaultConfig = WIDGET_REGISTRY[initialWidgetId].defaultConfig;
+    return normalizedGlobalTheme ? applyBrandThemeToConfig(defaultConfig, normalizedGlobalTheme) : defaultConfig;
+  });
+  const [brandTheme, setBrandTheme] = useState(normalizedGlobalTheme); // Store extracted brand colors
+  const [expandedSections, setExpandedSections] = useState({});
+  const [configSearch, setConfigSearch] = useState('');
+  const sectionRefs = useRef({});
+  const configPanelRef = useRef(null);
+  const infiniteScrollRef = useRef(null);
+  const tabMenuRef = useRef(null);
+  const [highlightedSection, setHighlightedSection] = useState(null);
+  const [panelPulse, setPanelPulse] = useState(false);
+  const [visibleSectionCount, setVisibleSectionCount] = useState(CONFIG_SECTION_BATCH);
+  const [showTabMenu, setShowTabMenu] = useState(false);
+  const [showAllButtonGeneratorSections, setShowAllButtonGeneratorSections] = useState(false);
+  const [widgetSearch, setWidgetSearch] = useState('');
+  const [navFilter, setNavFilter] = useState('all');
+  const [pinnedWidgets, setPinnedWidgets] = useState(() => {
+    if (typeof window === 'undefined') return [];
+    try {
+      const stored = window.localStorage.getItem('notion_wiz_pins');
+      return stored ? JSON.parse(stored) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  // Recent widgets tracking
+  const { recentWidgets, addRecentWidget } = useRecentWidgets();
 
   // EXPORT STATES
   const [showExport, setShowExport] = useState(false);
+  const getIsDesktop = useCallback(() => {
+    if (typeof window === 'undefined') return true;
+    return window.innerWidth >= 1024;
+  }, []);
+  const [isDesktop, setIsDesktop] = useState(getIsDesktop);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(getIsDesktop);
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    let previous = getIsDesktop();
+    const handleResize = () => {
+      const next = getIsDesktop();
+      if (next !== previous) {
+        previous = next;
+        setIsDesktop(next);
+        setIsSidebarOpen(next);
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [getIsDesktop]);
 
   const debouncedConfig = useDebounce(config, DEBOUNCE_DELAY);
+  const effectiveBrandTheme = brandTheme || normalizedGlobalTheme;
+  const hasCustomBrandTheme = Boolean(effectiveBrandTheme);
+  const customBrandLabel = effectiveBrandTheme?.presetName || effectiveBrandTheme?.name || 'Custom Brand Theme';
+  const ActiveWidget = WIDGET_REGISTRY[activeWidgetId];
+  const sectionOutline = useMemo(() => {
+    if (!ActiveWidget?.sections) return [];
+    return ActiveWidget.sections
+      .map((section) => {
+        const controlCount = ActiveWidget.fields.filter(
+          (field) => (field.section || 'general') === section.id
+        ).length;
+        return { ...section, controlCount };
+      })
+      .filter((section) => section.controlCount > 0);
+  }, [ActiveWidget]);
 
   useEffect(() => {
     // Load JaZeR brand fonts: Orbitron (headings) and Montserrat (body)
@@ -1531,49 +2354,64 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme }) {
     return () => document.head.removeChild(link);
   }, []);
 
-  // Update brandTheme when globalBrandTheme changes
   useEffect(() => {
-    if (globalBrandTheme) {
-      setBrandTheme(globalBrandTheme);
-      // Optionally apply colors to current config
-      if (globalBrandTheme.primary) {
-        setConfig(prev => ({
-          ...prev,
-          bgColor: globalBrandTheme.background || prev.bgColor,
-          textColor: globalBrandTheme.text || prev.textColor,
-          accentColor: globalBrandTheme.primary || prev.accentColor
-        }));
+    sectionRefs.current = {};
+  }, [activeWidgetId]);
+
+  useEffect(() => {
+    if (!showTabMenu) return undefined;
+    const handleClick = (event) => {
+      if (!tabMenuRef.current) return;
+      if (!tabMenuRef.current.contains(event.target)) {
+        setShowTabMenu(false);
       }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, [showTabMenu]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      localStorage.setItem('notion_wiz_pins', JSON.stringify(pinnedWidgets));
+    } catch {
+      // ignore
     }
-  }, [globalBrandTheme]);
+  }, [pinnedWidgets]);
 
-  const applyBrandToConfig = (baseConfig, brandId) => {
-    const brand = BRAND_KITS[brandId];
-    if (!brand || brandId === 'none') return baseConfig;
+  // Update brandTheme when globalBrandTheme changes
+  const toggleSection = useCallback((sectionId) => {
+    setExpandedSections(prev => ({
+      ...prev,
+      [sectionId]: prev[sectionId] === false ? true : false
+    }));
+  }, []);
 
-    const newConfig = { ...baseConfig };
-    if (brand.fontFamily) newConfig.fontFamily = brand.fontFamily;
-    if (brand.bgColor) newConfig.bgColor = brand.bgColor;
-    if (brand.textColor) newConfig.textColor = brand.textColor;
-    if (brand.accentColor) newConfig.accentColor = brand.accentColor;
-
-    if (brandId === 'jazer') {
-      if (newConfig.glowEffect !== undefined) newConfig.glowEffect = true;
-      if (newConfig.gradientText !== undefined) newConfig.gradientText = true;
-    }
-
-    return newConfig;
-  };
+  const isSectionOpen = useCallback((sectionId) => expandedSections[sectionId] !== false, [expandedSections]);
 
   const handleWidgetChange = (id) => {
     setActiveWidgetId(id);
+    setShowAllButtonGeneratorSections(false);
+    setVisibleSectionCount(CONFIG_SECTION_BATCH);
     const base = WIDGET_REGISTRY[id].defaultConfig;
-    setConfig(applyBrandToConfig(base, activeBrandId));
+    const themedConfig = applyBrandToConfig(base, activeBrandId, effectiveBrandTheme);
+    setConfig(themedConfig);
     setShowExport(false);
+    setWidgetSearch('');
+    
+    // Track as recent widget
+    const widget = WIDGET_REGISTRY[id];
+    if (widget) {
+      addRecentWidget(id, widget.label);
+    }
   };
 
   const handleBrandChange = (brandId) => {
-    const currentDefault = applyBrandToConfig(WIDGET_REGISTRY[activeWidgetId].defaultConfig, activeBrandId);
+    const currentDefault = applyBrandToConfig(
+      WIDGET_REGISTRY[activeWidgetId].defaultConfig,
+      activeBrandId,
+      effectiveBrandTheme
+    );
     const hasCustomizations = JSON.stringify(config) !== JSON.stringify(currentDefault);
 
     if (hasCustomizations && !window.confirm('Applying a brand kit will override your current customizations. Continue?')) {
@@ -1581,281 +2419,1231 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme }) {
     }
 
     setActiveBrandId(brandId);
-    setConfig(prev => applyBrandToConfig(prev, brandId));
+    setConfig(prev => applyBrandToConfig(prev, brandId, effectiveBrandTheme));
   };
 
-  const handleConfigChange = (key, value) => {
-    // If key is 'lightMode' or 'darkMode', value is an object for nested update
-    if (key === 'lightMode' || key === 'darkMode') {
-      setConfig(p => ({
-        ...p,
-        [key]: { ...p[key], ...value }
-      }));
-    } else {
-      // Number validation fallback for non-nested properties
-      if (typeof config[key] === 'number' && typeof value === 'string') {
-        value = parseInt(value) || config[key];
-      }
-      setConfig(p => ({ ...p, [key]: value }));
+  // Helper to get nested property value
+  const getNestedValue = (obj, path) => {
+    return path.split('.').reduce((acc, part) => acc?.[part], obj);
+  };
+
+  // Helper to set nested property value
+  const setNestedValue = (obj, path, value) => {
+    const parts = path.split('.');
+    const last = parts.pop();
+    const target = parts.reduce((acc, part) => {
+      if (!acc[part]) acc[part] = {};
+      return acc[part];
+    }, obj);
+    target[last] = value;
+    return obj;
+  };
+
+  const handleConfigChange = useCallback((key, value) => {
+    if (key.includes('.')) {
+      setConfig(prev => {
+        const newConfig = { ...prev };
+        setNestedValue(newConfig, key, value);
+        return newConfig;
+      });
+      return;
     }
-  };
 
-  const ActiveWidget = WIDGET_REGISTRY[activeWidgetId];
+    if (key === 'lightMode' || key === 'darkMode') {
+      setConfig(prev => ({
+        ...prev,
+        [key]: { ...prev[key], ...value }
+      }));
+      return;
+    }
 
-  // --- EXPORT LOGIC ---
-
-  const generateCode = () => {
-    const widgetDef = WIDGET_REGISTRY[activeWidgetId];
-    const brand = BRAND_KITS[activeBrandId];
-    const fontLinks = brand?.fontLinks || '';
-    const cssVariables = brand?.cssVariables || '';
-    const extraCSS = brand?.extraCSS || '';
-    const fontFamily = brand?.fontFamily || config.fontFamily;
-
-    // NOTE: Removed font imports from generated styles as requested to prevent redundancy if link tags exist
-    const commonStyles = `
-      ${cssVariables}
-      ${extraCSS}
-      body { 
-        margin: 0; padding: 0; height: 100vh; width: 100vw;
-        display: flex; overflow: hidden;
-        background-color: ${config.bgColor}; color: ${config.textColor};
-        font-family: ${fontFamily};
+    setConfig(prev => {
+      let nextValue = value;
+      if (typeof prev[key] === 'number' && typeof value === 'string') {
+        const parsed = parseInt(value, 10);
+        nextValue = Number.isNaN(parsed) ? prev[key] : parsed;
       }
-      .flex { display: flex; } .flex-col { flex-direction: column; }
-      .items-center { align-items: center; } .justify-center { justify-content: center; }
-      .h-full { height: 100%; } .w-full { width: 100%; }
-      .text-center { text-align: center; } .font-bold { font-weight: 700; }
-      .italic { font-style: italic; } .p-6 { padding: 1.5rem; }
-    `;
+      return { ...prev, [key]: nextValue };
+    });
+  }, []);
 
-    return `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${widgetDef.label} Widget</title>
-    ${fontLinks}
-    <style>${commonStyles}</style>
-</head>
-<body>
-    ${widgetDef.generateHTML(config)}
-    <script>${widgetDef.generateScript(config)}</script>
-</body>
-</html>`;
-  };
+  const handleConfigSearchChange = useCallback((value) => {
+    setConfigSearch(value);
+    if (value.trim()) {
+      setVisibleSectionCount(Number.MAX_SAFE_INTEGER);
+    } else {
+      setVisibleSectionCount(CONFIG_SECTION_BATCH);
+    }
+  }, []);
 
-  return (
-    <div className="min-h-screen flex flex-col md:flex-row font-sans h-screen overflow-hidden" style={{ backgroundColor: 'var(--jazer-night-black)', color: 'var(--jazer-stardust-white)' }}>
-      {/* SIDEBAR */}
-      <div className="w-full md:w-64 flex flex-col z-10 h-full" style={{ backgroundColor: 'var(--jazer-graphite)', borderRight: '1px solid var(--jazer-soft-slate)' }}>
-        <div className="p-4" style={{ borderBottom: '1px solid var(--jazer-soft-slate)' }}>
-          <button aria-label="Navigate back to home" onClick={onBack} className="flex items-center gap-2 text-xs font-bold mb-4 uppercase tracking-wider" style={{ color: 'var(--jazer-soft-slate)' }} onMouseEnter={(e) => e.currentTarget.style.color = 'var(--jazer-electric-purple)'} onMouseLeave={(e) => e.currentTarget.style.color = 'var(--jazer-soft-slate)'}><ArrowLeft className="w-3 h-3" /> Back to Home</button>
-          <h1 className="text-lg font-bold flex items-center gap-2 gradient-text neon-text">
-            <img src="/assets/branding/app-icon.svg" alt="Icon" className="w-6 h-6 drop-shadow-[0_0_5px_rgba(139,92,246,0.5)]" /> Builder
-          </h1>
-        </div>
-        <nav className="flex-1 overflow-y-auto p-2 space-y-1">
-          {Object.values(WIDGET_REGISTRY).map(w => (
-            <button key={w.id} aria-label={`Select ${w.label} widget`} onClick={() => handleWidgetChange(w.id)} className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-all text-left" style={{
-              backgroundColor: activeWidgetId === w.id ? 'rgba(139, 92, 246, 0.15)' : 'transparent',
-              color: activeWidgetId === w.id ? 'var(--jazer-electric-purple)' : 'var(--jazer-stardust-white)',
-              border: activeWidgetId === w.id ? '1px solid var(--jazer-electric-purple)' : '1px solid transparent',
-              boxShadow: activeWidgetId === w.id ? 'var(--jazer-glow-purple)' : 'none'
-            }}>
-              <span style={{ color: activeWidgetId === w.id ? 'var(--jazer-electric-purple)' : 'var(--jazer-soft-slate)' }}>{w.icon}</span>
-              {w.label}
+  const syncBrandTheme = useCallback((theme) => {
+    const normalized = theme ? normalizeBrandTheme(theme) : null;
+    if (normalized) {
+      setBrandTheme(normalized);
+      setActiveBrandId('custom');
+      onBrandThemeUpdate?.(normalized);
+      try {
+        localStorage.setItem('jazer_global_brand_theme', JSON.stringify(normalized));
+        localStorage.setItem('jazer_global_brand_active', 'true');
+      } catch {
+        // no-op if storage is unavailable
+      }
+      return;
+    }
+
+    setBrandTheme(null);
+    setActiveBrandId(prev => (prev === 'custom' ? 'none' : prev));
+    onBrandThemeUpdate?.(null);
+    try {
+        localStorage.removeItem('jazer_global_brand_theme');
+        localStorage.removeItem('jazer_global_brand_active');
+      } catch {
+        // ignore storage errors
+      }
+  }, [onBrandThemeUpdate]);
+
+  const navFilters = useMemo(() => ['all', 'pinned', ...Array.from(new Set(Object.values(WIDGET_CATEGORIES)))], []);
+
+  const filteredWidgets = useMemo(() => {
+    const query = widgetSearch.trim().toLowerCase();
+    const pinIndex = (id) => pinnedWidgets.indexOf(id);
+    return Object.values(WIDGET_REGISTRY)
+      .map(w => ({
+        ...w,
+        category: WIDGET_CATEGORIES[w.id] || 'Other',
+        isPinned: pinnedWidgets.includes(w.id)
+      }))
+      .filter(w => {
+        if (!query) return true;
+        const haystack = [w.label, w.description].filter(Boolean).map(val => String(val).toLowerCase());
+        return haystack.some(text => text.includes(query));
+      })
+      .filter(w => {
+        if (navFilter === 'all') return true;
+        if (navFilter === 'pinned') return w.isPinned;
+        return w.category === navFilter;
+      })
+      .sort((a, b) => {
+        const aPin = pinIndex(a.id);
+        const bPin = pinIndex(b.id);
+        if (aPin !== bPin) {
+          if (aPin === -1) return 1;
+          if (bPin === -1) return -1;
+          return aPin - bPin;
+        }
+        return a.label.localeCompare(b.label);
+      });
+  }, [widgetSearch, navFilter, pinnedWidgets]);
+
+  const togglePinned = useCallback((id) => {
+    setPinnedWidgets(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
+  }, []);
+
+  const tabSections = useMemo(() => {
+    return [
+      { id: 'brandControls', label: 'Brand Kit' },
+      { id: 'appearanceControls', label: 'Surface' },
+      ...sectionOutline.map(section => ({ id: section.id, label: section.label }))
+    ];
+  }, [sectionOutline]);
+
+  const configSectionsRender = useMemo(() => {
+    if (!ActiveWidget) {
+      return { nodes: [], total: 0 };
+    }
+
+    const query = configSearch.trim().toLowerCase();
+    const sections = ActiveWidget.sections
+      ? ActiveWidget.sections.map(s => s.id)
+      : [...new Set(ActiveWidget.fields.map(f => f.section))].filter(Boolean);
+    const generalFields = ActiveWidget.fields.filter(f => !f.section);
+    if (generalFields.length > 0 && !sections.includes('general')) {
+      sections.unshift('general');
+    }
+
+    const filterBySearch = (field) => {
+      if (!query) return true;
+      const haystack = [
+        field.label,
+        field.name,
+        field.placeholder,
+        field.section
+      ].filter(Boolean).map(val => String(val).toLowerCase());
+      return haystack.some(text => text.includes(query));
+    };
+
+    const sectionNodes = sections.map(section => {
+      const sectionFields = section === 'general'
+        ? generalFields
+        : ActiveWidget.fields.filter(f => f.section === section);
+      if (sectionFields.length === 0) return null;
+
+      let sectionTitle = section;
+      let sectionConfig = null;
+      if (ActiveWidget.sections) {
+        sectionConfig = ActiveWidget.sections.find(s => s.id === section);
+        sectionTitle = sectionConfig ? sectionConfig.label : section;
+      } else {
+        const sectionTitles = {
+          time: 'Time Display',
+          style: 'Clock Style',
+          analog: 'Analog Customization',
+          typography: 'Typography',
+          background: 'Background',
+          interactive: 'Interactive Mode',
+          theme: 'Preset Themes',
+          appearance: 'Appearance Mode',
+          features: 'Additional Features',
+          effects: 'Visual Effects',
+          event: 'Event Setup',
+          units: 'Time Units',
+          completion: 'Completion',
+          general: 'General Settings'
+        };
+        sectionTitle = sectionTitles[section] || section;
+      }
+
+      const sectionTitleLower = sectionTitle.toLowerCase();
+      const descriptionMatches = query && sectionConfig?.description?.toLowerCase().includes(query);
+      const notesMatch = query && sectionConfig?.notes?.some(note =>
+        [note.title, note.body].filter(Boolean).some(text => text.toLowerCase().includes(query))
+      );
+      const sectionMatchesSearch = query && (sectionTitleLower.includes(query) || descriptionMatches || notesMatch);
+
+      const isButtonGeneratorGuided = activeWidgetId === 'newButtonGenerator' && !showAllButtonGeneratorSections && !query;
+      const gatedSections = {
+        macroInput: Boolean(config.macroMode?.enabled || config.inputMode?.enabled),
+        cycleToggle: Boolean(config.cycleMode?.enabled || config.toggleMode?.enabled),
+        notionIntegration: Boolean(config.notionIntegration?.enabled),
+        visuals: Boolean(
+          config.visuals?.enableParticleEffects ||
+          config.visuals?.activeGlow ||
+          config.visuals?.showProgressArc ||
+          config.visuals?.badgesEnabled
+        ),
+        dataAware: Boolean(config.dataAware?.enabled)
+      };
+
+      if (isButtonGeneratorGuided && Object.prototype.hasOwnProperty.call(gatedSections, section) && !gatedSections[section]) {
+        const enableSection = () => {
+          if (section === 'macroInput') handleConfigChange('macroMode.enabled', true);
+          if (section === 'cycleToggle') handleConfigChange('toggleMode.enabled', true);
+          if (section === 'notionIntegration') handleConfigChange('notionIntegration.enabled', true);
+          if (section === 'dataAware') handleConfigChange('dataAware.enabled', true);
+          if (section === 'visuals') {
+            handleConfigChange('visuals', {
+              ...config.visuals,
+              enableParticleEffects: true,
+              activeGlow: true,
+              showProgressArc: true,
+              badgesEnabled: true
+            });
+          }
+        };
+
+        return (
+          <div
+            key={section}
+            ref={(el) => { if (el) sectionRefs.current[section] = el; }}
+            className={`border border-white/10 rounded-lg bg-white/5 overflow-hidden ${highlightedSection === section ? 'ring-2 ring-purple-400' : ''}`}
+          >
+            <button
+              type="button"
+              onClick={() => toggleSection(section)}
+              className="w-full px-3 py-2 flex items-center justify-between text-left text-sm font-semibold text-white"
+            >
+              <div className="flex flex-col text-left">
+                <span className="flex items-center gap-2">
+                  <Lock className="w-4 h-4 text-neutral-400" />
+                  {sectionTitle}
+                </span>
+                <span className="text-[11px] font-normal text-neutral-400">
+                  Hidden while disabled. Enable this upgrade to configure it.
+                </span>
+              </div>
+              <ChevronDown
+                className="w-4 h-4 transition-transform"
+                style={{ transform: isSectionOpen(section) ? 'rotate(180deg)' : 'rotate(0deg)' }}
+              />
             </button>
-          ))}
-        </nav>
-      </div>
-
-      {/* PREVIEW */}
-      <ResizablePreviewPanel
-        activeBrandId={activeBrandId}
-        config={config}
-        activeWidgetId={activeWidgetId}
-        debouncedConfig={debouncedConfig}
-        handleConfigChange={handleConfigChange}
-        brandTheme={brandTheme}
-        ActiveWidget={ActiveWidget}
-        showExport={showExport}
-        setShowExport={setShowExport}
-      />
-
-      {/* CONFIG */}
-      <div className="w-full md:w-80 h-full flex flex-col" style={{ backgroundColor: 'var(--jazer-graphite)', borderLeft: '1px solid var(--jazer-soft-slate)' }}>
-        <div className="p-5 flex justify-between items-center" style={{ borderBottom: '1px solid var(--jazer-soft-slate)' }}>
-          <h2 className="font-bold text-sm uppercase neon-text" style={{ fontFamily: 'Orbitron, sans-serif', color: 'var(--jazer-electric-purple)', letterSpacing: '0.1em' }}>Configuration</h2>
-          <button aria-label="Get export code" onClick={() => setShowExport(true)} className="text-xs px-3 py-1.5 rounded flex items-center gap-1 btn-neon transition-all" style={{ backgroundColor: 'var(--jazer-neon-pink)', color: 'var(--jazer-night-black)', fontWeight: 'bold' }}><Download className="w-3 h-3" /> Get Code</button>
-        </div>
-        <div className="flex-1 overflow-y-auto p-6 space-y-8">
-
-          {/* Brand Selection */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs font-bold text-neutral-400 uppercase"><Briefcase className="w-3 h-3" /> Brand Kit</div>
-            <select aria-label="Select brand kit" value={activeBrandId} onChange={(e) => handleBrandChange(e.target.value)} className="w-full p-2 text-sm border rounded">
-              <option value="none">None</option>
-              <option value="jazer">JaZeR Neon</option>
-            </select>
-            {activeBrandId === 'jazer' && (
-              <div className="p-3 bg-purple-50 border border-purple-200 rounded-lg text-xs space-y-1">
-                <div className="font-bold text-purple-900 flex items-center gap-1"><Sparkles className="w-3 h-3" /> Active Features:</div>
-                <ul className="text-purple-700 space-y-0.5 ml-4 list-disc">
-                  <li>Orbitron + Montserrat fonts</li>
-                  <li>Night Black background</li>
-                  <li>Neon gradient effects</li>
-                </ul>
+            {isSectionOpen(section) && (
+              <div className="p-3 space-y-3 border-t border-white/5">
+                <div className="flex items-start justify-between gap-3 bg-black/20 border border-white/10 rounded-lg p-3">
+                  <div className="text-xs text-neutral-300 leading-snug">
+                    Use the expanding Upgrade orb on the preview to turn this on, or enable it here.
+                  </div>
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setShowAllButtonGeneratorSections(true)}
+                      className="text-[11px] px-3 py-1.5 rounded-full border border-white/15 text-neutral-200 hover:border-purple-300 hover:text-white transition"
+                    >
+                      Show
+                    </button>
+                    <button
+                      type="button"
+                      onClick={enableSection}
+                      className="text-[11px] px-3 py-1.5 rounded-full border border-emerald-300/60 text-emerald-100 bg-emerald-500/10 hover:bg-emerald-500/20 transition"
+                    >
+                      Enable
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
+        );
+      }
 
-          {/* Optional: Brand Palette Visualization */}
-          {activeBrandId === 'jazer' && <BrandColorPalette />}
+      const filteredFields = sectionMatchesSearch ? sectionFields : sectionFields.filter(filterBySearch);
+      if (filteredFields.length === 0) return null;
 
-          {/* Brand Logo Color Extraction */}
+      const open = query ? true : isSectionOpen(section);
+
+      return (
+        <div
+          key={section}
+          ref={(el) => { if (el) sectionRefs.current[section] = el; }}
+          className={`border border-white/10 rounded-lg bg-white/5 overflow-hidden ${highlightedSection === section ? 'ring-2 ring-purple-400' : ''}`}
+        >
+          <button
+            type="button"
+            onClick={() => toggleSection(section)}
+            className="w-full px-3 py-2 flex items-center justify-between text-left text-sm font-semibold text-white"
+          >
+            <div className="flex flex-col text-left">
+              <span>{sectionTitle}</span>
+              {sectionConfig?.description && (
+                <span className="text-[11px] font-normal text-neutral-400">{sectionConfig.description}</span>
+              )}
+            </div>
+            <ChevronDown
+              className="w-4 h-4 transition-transform"
+              style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)' }}
+            />
+          </button>
+          {open && (
+            <div className="p-3 space-y-3 border-t border-white/5">
+              {sectionConfig?.notes?.length > 0 && (
+                <div className="space-y-2 text-[11px] text-neutral-300 bg-white/5 rounded p-2">
+                  {sectionConfig.notes.map((note) => (
+                    <div key={`${section}-${note.title}`} className="space-y-1">
+                      <div className="text-xs font-semibold text-white">{note.title}</div>
+                      {note.body && <p>{note.body}</p>}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {filteredFields.map(f => {
+                let field = f;
+                if (f.name === 'presetTheme' && brandTheme && activeWidgetId === 'clock') {
+                  const brandPresets = [
+                    { label: '--- Brand-Based Themes ---', value: '__separator__', disabled: true },
+                    { label: 'Brand Monochrome', value: 'brand-monochrome' },
+                    { label: 'Brand Contrast', value: 'brand-contrast' },
+                    { label: 'Brand Vibrant', value: 'brand-vibrant' },
+                    { label: 'Brand Professional', value: 'brand-professional' },
+                    { label: 'Brand Dark', value: 'brand-dark' },
+                    { label: 'Brand Light', value: 'brand-light' },
+                    { label: 'Brand Neon', value: 'brand-neon' },
+                    { label: 'Brand Minimal', value: 'brand-minimal' }
+                  ];
+                  field = {
+                    ...f,
+                    options: [...f.options, ...brandPresets]
+                  };
+                }
+
+                return (
+                  <WidgetField
+                    key={f.name}
+                    field={field}
+                    value={f.name.includes('.') ? getNestedValue(config, f.name) : config[f.name]}
+                    onChange={(val) => handleConfigChange(f.name, val)}
+                  />
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    }).filter(Boolean);
+
+    if (sectionNodes.length === 0) {
+      return {
+        nodes: [
+          <div key="empty" className="text-xs text-neutral-400 italic">
+            {query ? `No settings match "${configSearch}".` : 'No configurable settings available.'}
+          </div>
+        ],
+        total: 0
+      };
+    }
+
+    const limitedSections = query ? sectionNodes : sectionNodes.slice(0, visibleSectionCount);
+
+    return {
+      nodes: limitedSections,
+      total: sectionNodes.length
+    };
+  }, [
+    ActiveWidget,
+    activeWidgetId,
+    brandTheme,
+    config,
+    configSearch,
+    handleConfigChange,
+    highlightedSection,
+    isSectionOpen,
+    showAllButtonGeneratorSections,
+    toggleSection,
+    visibleSectionCount
+  ]);
+
+  const { nodes: configSectionNodes, total: totalSectionCount } = configSectionsRender;
+  const hasMoreSections = !configSearch.trim() && totalSectionCount > visibleSectionCount;
+
+  useEffect(() => {
+    if (configSearch.trim()) return;
+    if (visibleSectionCount >= totalSectionCount) return;
+    const raf = typeof window !== 'undefined'
+      ? window.requestAnimationFrame
+      : null;
+    const runCheck = () => {
+      const panel = configPanelRef.current;
+      if (!panel) return;
+      if (panel.scrollHeight <= panel.clientHeight + 40) {
+        setVisibleSectionCount((prev) => Math.min(prev + CONFIG_SECTION_BATCH, totalSectionCount));
+      }
+    };
+
+    if (raf) {
+      raf(runCheck);
+      return () => {};
+    }
+    runCheck();
+  }, [configSearch, totalSectionCount, visibleSectionCount]);
+
+  useEffect(() => {
+    if (!hasMoreSections) return undefined;
+    const sentinel = infiniteScrollRef.current;
+    if (!sentinel) return undefined;
+    const root = configPanelRef.current || null;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const entry = entries[0];
+        if (entry.isIntersecting) {
+          setVisibleSectionCount((prev) => Math.min(prev + CONFIG_SECTION_BATCH, totalSectionCount));
+        }
+      },
+      {
+        root,
+        threshold: 0.25
+      }
+    );
+    observer.observe(sentinel);
+    return () => observer.disconnect();
+  }, [hasMoreSections, totalSectionCount]);
+
+  const focusSection = useCallback((sectionId) => {
+    if (!sectionId || !sectionRefs.current[sectionId]) return false;
+    sectionRefs.current[sectionId].scrollIntoView({ behavior: 'smooth', block: 'center' });
+    setExpandedSections(prev => ({ ...prev, [sectionId]: true }));
+    setHighlightedSection(sectionId);
+    setTimeout(() => {
+      setHighlightedSection((current) => current === sectionId ? null : current);
+    }, 1500);
+    return true;
+  }, []);
+
+  const handleCustomizeRequest = useCallback((sectionId) => {
+    const found = focusSection(sectionId);
+    if (!found && sectionId) {
+      setVisibleSectionCount(Number.MAX_SAFE_INTEGER);
+      if (typeof window !== 'undefined') {
+        window.requestAnimationFrame(() => {
+          setTimeout(() => focusSection(sectionId), 80);
+        });
+      }
+    } else if (!sectionId && configPanelRef.current) {
+      configPanelRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    setPanelPulse(true);
+    setTimeout(() => setPanelPulse(false), 1200);
+  }, [focusSection]);
+
+  const upgradeItems = useMemo(() => {
+    const baseItems = [
+      {
+        id: 'upgrade-brand',
+        label: 'Brand Kit Sync',
+        description: 'Apply a global palette and keep widgets consistent.',
+        icon: Palette,
+        kind: 'navigate',
+        cta: 'Open',
+        onSelect: () => handleCustomizeRequest('brandControls')
+      },
+      {
+        id: 'upgrade-surface',
+        label: 'Surface & Canvas',
+        description: 'Tune background, text, and sizing for a cleaner embed.',
+        icon: Layout,
+        kind: 'navigate',
+        cta: 'Open',
+        onSelect: () => handleCustomizeRequest('appearanceControls')
+      }
+    ];
+
+    if (activeWidgetId !== 'newButtonGenerator') {
+      return baseItems;
+    }
+
+    const toggleItems = [
+      {
+        id: 'upgrade-hover',
+        label: 'Hover Menu',
+        description: 'Show hover glow + interaction hints on the widget surface.',
+        icon: Eye,
+        kind: 'toggle',
+        enabled: Boolean(config.showHoverMenu),
+        keepOpen: true,
+        onToggle: (next) => handleConfigChange('showHoverMenu', next)
+      },
+      {
+        id: 'upgrade-customize-button',
+        label: 'Customize Button',
+        description: 'Expose quick navigation into the Configure panel.',
+        icon: Settings,
+        kind: 'toggle',
+        enabled: Boolean(config.showCustomizeButton),
+        keepOpen: true,
+        onToggle: (next) => handleConfigChange('showCustomizeButton', next)
+      },
+      {
+        id: 'upgrade-macro',
+        label: 'Macro Mode',
+        description: 'Run a sequence of actions from one click.',
+        icon: ListIcon,
+        kind: 'toggle',
+        enabled: Boolean(config.macroMode?.enabled),
+        keepOpen: true,
+        onToggle: (next) => handleConfigChange('macroMode.enabled', next)
+      },
+      {
+        id: 'upgrade-input',
+        label: 'Input Mode',
+        description: 'Prompt for a quick note before running actions.',
+        icon: Type,
+        kind: 'toggle',
+        enabled: Boolean(config.inputMode?.enabled),
+        keepOpen: true,
+        onToggle: (next) => handleConfigChange('inputMode.enabled', next)
+      },
+      {
+        id: 'upgrade-cycle',
+        label: 'Cycle Mode',
+        description: 'Cycle through presets (Start, Pause, Skip, Complete).',
+        icon: RefreshCcw,
+        kind: 'toggle',
+        enabled: Boolean(config.cycleMode?.enabled),
+        keepOpen: true,
+        onToggle: (next) => handleConfigChange('cycleMode.enabled', next)
+      },
+      {
+        id: 'upgrade-toggle',
+        label: 'Toggle State',
+        description: 'Persist an Active/Inactive state with glow + logging.',
+        icon: Zap,
+        kind: 'toggle',
+        enabled: Boolean(config.toggleMode?.enabled),
+        keepOpen: true,
+        onToggle: (next) => handleConfigChange('toggleMode.enabled', next)
+      },
+      {
+        id: 'upgrade-notion',
+        label: 'Notion Integration',
+        description: 'Simulate database actions, templates, and two-way conditions.',
+        icon: LinkIcon,
+        kind: 'toggle',
+        enabled: Boolean(config.notionIntegration?.enabled),
+        keepOpen: true,
+        onToggle: (next) => handleConfigChange('notionIntegration.enabled', next)
+      },
+      {
+        id: 'upgrade-visuals',
+        label: 'Premium Visuals',
+        description: 'Particles, progress arc, badges, and active glow.',
+        icon: Sparkles,
+        kind: 'toggle',
+        enabled: Boolean(
+          config.visuals?.enableParticleEffects ||
+          config.visuals?.activeGlow ||
+          config.visuals?.showProgressArc ||
+          config.visuals?.badgesEnabled
+        ),
+        keepOpen: true,
+        onToggle: (next) => handleConfigChange('visuals', {
+          ...config.visuals,
+          enableParticleEffects: next,
+          activeGlow: next,
+          showProgressArc: next,
+          badgesEnabled: next
+        })
+      },
+      {
+        id: 'upgrade-data-aware',
+        label: 'Data-Aware Reactions',
+        description: 'Let sample metrics change colors, labels, and status.',
+        icon: Activity,
+        kind: 'toggle',
+        enabled: Boolean(config.dataAware?.enabled),
+        keepOpen: true,
+        onToggle: (next) => handleConfigChange('dataAware.enabled', next)
+      }
+    ];
+
+    const jumpItems = [
+      {
+        id: 'jump-modes',
+        label: 'Edit Modes & Macros',
+        description: 'Jump straight to macro + input mode settings.',
+        icon: CornerDownRight,
+        kind: 'navigate',
+        cta: 'Jump',
+        onSelect: () => handleCustomizeRequest('macroInput')
+      },
+      {
+        id: 'jump-notion',
+        label: 'Configure Notion Sync',
+        description: 'Database, template, two-way rules, and conditionals.',
+        icon: CornerDownRight,
+        kind: 'navigate',
+        cta: 'Jump',
+        onSelect: () => handleCustomizeRequest('notionIntegration')
+      }
+    ];
+
+    return [...baseItems, ...toggleItems, ...jumpItems];
+  }, [activeWidgetId, config, handleConfigChange, handleCustomizeRequest]);
+
+  return (
+    <div className="min-h-screen flex flex-col lg:flex-row font-sans" style={{ backgroundColor: 'var(--jazer-night-black)', color: 'var(--jazer-stardust-white)' }}>
+      {!isDesktop && isSidebarOpen && (
+        <button
+          type="button"
+          className="fixed inset-0 bg-black/60 z-30 lg:hidden"
+          aria-label="Close widget list overlay"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+      {/* SIDEBAR */}
+      <div
+        className={`${isDesktop ? 'relative w-full lg:w-72' : 'fixed inset-y-0 left-0 w-72 max-w-[85vw] transform transition-transform duration-300 z-40'} flex flex-col h-full min-h-0`}
+        style={{ backgroundColor: 'var(--jazer-graphite)', borderRight: '1px solid var(--jazer-soft-slate)', transform: isDesktop || isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)' }}
+      >
+        <div className="p-4 space-y-3" style={{ borderBottom: '1px solid var(--jazer-soft-slate)' }}>
+          <div className="flex items-center justify-between gap-2">
+            <div>
+              <p className="text-[10px] uppercase tracking-[0.3em] text-neutral-500">Builder</p>
+              <h1 className="text-lg font-bold flex items-center gap-2 gradient-text neon-text">
+                <Layout className="w-5 h-5" style={{ color: 'var(--jazer-electric-purple)' }} /> {ActiveWidget?.label || 'Widget'}
+              </h1>
+            </div>
+            <div className="flex items-center gap-2">
+              {!isDesktop && (
+                <button
+                  type="button"
+                  aria-label="Close widget list"
+                  onClick={() => setIsSidebarOpen(false)}
+                  className="p-1 rounded-full border border-white/15 text-neutral-200 hover:border-purple-400 hover:text-white transition"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+              <button aria-label="Navigate back to home" onClick={onBack} className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border border-white/10 text-neutral-300 hover:border-purple-400 hover:text-white transition-colors">
+                <ArrowLeft className="w-3 h-3" /> Exit
+              </button>
+            </div>
+          </div>
+          <p className="text-[11px] text-neutral-400 leading-snug">
+            Choose a widget to edit. Use search or pin your frequent favorites for faster access.
+          </p>
+        </div>
+        <div className="px-4 py-3 border-b border-subtle space-y-2">
+          <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+                <input
+                  type="text"
+                  value={widgetSearch}
+                  onChange={(e) => setWidgetSearch(e.target.value)}
+                  placeholder="Search widgets..."
+                  className="w-full bg-white/5 border-interactive rounded-full py-2 pl-9 pr-9 text-sm text-white placeholder:text-neutral-400 focus-ring transition-all"
+                  aria-label="Search widgets"
+                />
+                {widgetSearch && (
+                  <button
+                    onClick={() => setWidgetSearch('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white transition-colors focus-ring rounded"
+                    aria-label="Clear search"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+          </div>
+          <div className="flex items-center justify-between text-[10px] uppercase tracking-widest text-neutral-500">
+            <span>{filteredWidgets.length} results</span>
+            <span className="text-neutral-400">Pin favorites for quick access</span>
+          </div>
+        </div>
+        <div className="px-4 py-2 border-b border-subtle flex flex-wrap gap-2">
+          {navFilters.map(filter => {
+            const label = filter === 'all' ? 'All Widgets' : filter === 'pinned' ? 'Pinned' : filter;
+            const isActive = navFilter === filter;
+            const disabled = filter === 'pinned' && pinnedWidgets.length === 0;
+            
+            // Icons for categories
+            const icons = {
+              all: Layout,
+              pinned: Star,
+              'Time & Productivity': Clock,
+              'Data & Information': BarChart3,
+              'Media & Display': ImageIcon,
+              'Interactive & Actions': MousePointerClick,
+              Other: MoreHorizontal
+            };
+            const IconComponent = icons[filter] || null;
+            
+            return (
+              <button
+                key={filter}
+                type="button"
+                disabled={disabled}
+                onClick={() => setNavFilter(filter)}
+                className={`
+                  text-[10px] px-3 py-1.5 rounded-full border transition-all flex items-center gap-1.5
+                  ${isActive 
+                    ? 'border-accent text-white bg-purple-500/20 shadow-sm' 
+                    : 'border-interactive text-neutral-300 hover:border-emphasis hover:text-white hover:bg-white/5'
+                  } 
+                  ${disabled ? 'opacity-30 cursor-not-allowed' : ''} 
+                  focus-ring
+                `}
+                aria-pressed={isActive}
+              >
+                {IconComponent && <IconComponent className="w-3 h-3" />}
+                {label}
+              </button>
+            );
+          })}
+        </div>
+        <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
+          {/* Recent Widgets Section */}
+          {recentWidgets.length > 0 && navFilter === 'all' && !widgetSearch && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between px-2">
+                <h3 className="text-[10px] uppercase tracking-wider font-bold text-purple-400 flex items-center gap-1.5">
+                  <Clock className="w-3 h-3" />
+                  Recent
+                </h3>
+                <span className="text-[9px] text-neutral-500">{recentWidgets.length}</span>
+              </div>
+              <div className="space-y-1.5">
+                {recentWidgets.slice(0, 3).map(recent => {
+                  const isActive = activeWidgetId === recent.id;
+                  return (
+                    <button
+                      key={recent.id}
+                      type="button"
+                      onClick={() => handleWidgetChange(recent.id)}
+                      className={`
+                        w-full px-3 py-2 rounded-lg text-left transition-all flex items-center justify-between group
+                        ${isActive 
+                          ? 'bg-purple-500/15 border border-accent text-white' 
+                          : 'bg-white/5 border border-subtle hover:border-interactive hover:bg-white/[0.07] text-neutral-300 hover:text-white'
+                        }
+                      `}
+                    >
+                      <div className="flex-1 min-w-0">
+                        <div className="text-xs font-medium truncate">{recent.label}</div>
+                        <div className="text-[10px] text-neutral-500">
+                          {formatRelativeTime(recent.timestamp)}
+                        </div>
+                      </div>
+                      <ChevronRight className="w-3 h-3 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="border-t border-subtle pt-2" />
+            </div>
+          )}
+
+          {/* Main Widget List */}
+          {filteredWidgets.length === 0 ? (
+            <div className="text-xs text-neutral-400 bg-white/5 border-subtle rounded-xl p-4">
+              No widgets match your search. Try a different phrase or reset filters.
+            </div>
+          ) : (
+            filteredWidgets.map(w => {
+              const shortDescription = w.description || `Customize the ${w.label} widget.`;
+              const isActive = activeWidgetId === w.id;
+              return (
+                <div
+                  key={w.id}
+                  className={`border rounded-xl p-3 flex items-start gap-3 transition-all duration-200 ${
+                    isActive 
+                      ? 'border-accent bg-purple-500/15 shadow-lg shadow-purple-900/30' 
+                      : 'border-interactive bg-white/5 hover:border-emphasis hover:bg-white/[0.07]'
+                  }`}
+                >
+                  <button
+                    type="button"
+                    onClick={() => handleWidgetChange(w.id)}
+                    className="flex-1 text-left flex items-start gap-3 focus-ring-inset rounded"
+                  >
+                    <div className={`pt-1 px-2 py-1 rounded-lg text-sm transition-colors ${
+                      isActive ? 'text-purple-300 bg-purple-500/10' : 'text-neutral-300'
+                    }`}>
+                      {w.icon}
+                    </div>
+                    <div className="space-y-1 flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-sm font-semibold text-white">{w.label}</span>
+                        {isActive && (
+                          <span className="text-[10px] uppercase px-2 py-0.5 rounded-full bg-purple-500/20 border border-accent text-purple-200">
+                            Active
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-[11px] text-neutral-400 leading-snug line-clamp-2">
+                        {shortDescription}
+                      </p>
+                      <span className="text-[10px] uppercase tracking-wider text-neutral-500">
+                        {w.category}
+                      </span>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    aria-label={w.isPinned ? 'Unpin widget' : 'Pin widget'}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      togglePinned(w.id);
+                    }}
+                    className={`p-1.5 rounded-full border transition-all focus-ring ${
+                      w.isPinned 
+                        ? 'border-amber-300 text-amber-200 bg-amber-500/10 hover:bg-amber-500/20' 
+                        : 'border-interactive text-neutral-400 hover:border-amber-200 hover:text-amber-200 hover:bg-amber-500/10'
+                    }`}
+                  >
+                    <Star className="w-3.5 h-3.5" fill={w.isPinned ? '#FCD34D' : 'none'} />
+                  </button>
+                </div>
+              );
+            })
+          )}
+        </nav>
+      </div>
+
+      <div className="flex-1 flex flex-col min-h-0" style={{ backgroundColor: 'var(--jazer-night-black)' }}>
+        <div className="border-b border-white/10 bg-[#10121A] px-4 py-4 sm:px-6 sm:py-6 space-y-4">
+          {!isDesktop && (
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={() => setIsSidebarOpen(true)}
+                className="px-3 py-1.5 rounded-full border border-white/15 text-xs uppercase tracking-[0.3em] flex items-center gap-2 text-neutral-200 hover:border-purple-300 hover:text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400"
+              >
+                <Layout className="w-3 h-3" /> Widgets
+              </button>
+              <span className="text-[11px] uppercase tracking-[0.3em] text-neutral-500">Preview</span>
+            </div>
+          )}
+          <ResizablePreviewPanel
+            activeBrandId={activeBrandId}
+            config={config}
+            activeWidgetId={activeWidgetId}
+            debouncedConfig={debouncedConfig}
+            handleConfigChange={handleConfigChange}
+            brandTheme={brandTheme}
+            ActiveWidget={ActiveWidget}
+            showExport={showExport}
+            setShowExport={setShowExport}
+            onCustomizeRequest={handleCustomizeRequest}
+            upgradeItems={upgradeItems}
+          />
+        </div>
+
+        <div className="flex-1 flex flex-col border-t border-white/5 bg-[#0F1115] min-h-0">
+          <div className="lg:sticky lg:top-0 z-10 border-b border-white/10 bg-[#0A0C12]/95 backdrop-blur-md px-4 py-3 flex flex-wrap items-center gap-3">
+            <div className="text-xs font-bold uppercase tracking-[0.4em] text-neutral-500">Configure</div>
+            <div className="flex items-center gap-2 ml-auto">
+              {activeWidgetId === 'newButtonGenerator' && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllButtonGeneratorSections((prev) => !prev)}
+                  className={`text-[11px] px-3 py-1.5 rounded-full border transition flex items-center gap-1.5 ${
+                    showAllButtonGeneratorSections
+                      ? 'border-emerald-300/60 text-emerald-100 bg-emerald-500/10'
+                      : 'border-white/15 text-neutral-200 hover:border-purple-300 hover:text-white'
+                  }`}
+                  aria-pressed={showAllButtonGeneratorSections}
+                  title={showAllButtonGeneratorSections ? 'Hide advanced sections when disabled' : 'Show all sections (even if disabled)'}
+                >
+                  <ListIcon className="w-3.5 h-3.5" />
+                  {showAllButtonGeneratorSections ? 'All' : 'Guided'}
+                </button>
+              )}
+              <div className="relative" ref={tabMenuRef}>
+                <button
+                  type="button"
+                  onClick={() => setShowTabMenu((prev) => !prev)}
+                  className="flex items-center gap-2 px-3 py-1.5 text-[11px] rounded-full border border-white/15 text-neutral-200 hover:border-purple-300 hover:text-white transition"
+                  aria-expanded={showTabMenu}
+                >
+                  <Menu className="w-4 h-4" />
+                  Sections
+                </button>
+                {showTabMenu && (
+                  <div className="absolute right-0 mt-2 w-60 bg-[#0C0F16] border border-white/10 rounded-xl shadow-lg shadow-black/40 p-2 space-y-1 max-h-72 overflow-y-auto custom-scrollbar">
+                    {tabSections.map(tab => {
+                      const isActive = highlightedSection === tab.id || (tab.id === 'brandControls' && !highlightedSection);
+                      return (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => {
+                            handleCustomizeRequest(tab.id);
+                            setShowTabMenu(false);
+                          }}
+                          className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-[12px] transition ${
+                            isActive
+                              ? 'bg-purple-500/20 border border-purple-400 text-white'
+                              : 'bg-white/5 border border-white/5 text-neutral-200 hover:border-purple-300 hover:text-white'
+                          }`}
+                        >
+                          <span>{tab.label}</span>
+                          {isActive && <span className="text-[10px] uppercase tracking-wide text-purple-200">Active</span>}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+              <button aria-label="Get export code" onClick={() => setShowExport(true)} className="text-[11px] px-3 py-1.5 rounded-full border border-pink-400/60 text-white bg-pink-500/20 hover:bg-pink-500/30 transition flex items-center gap-1">
+                <Download className="w-3 h-3" /> Export
+              </button>
+            </div>
+          </div>
+
+          <div
+            ref={configPanelRef}
+            className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-8 transition-all"
+            style={{
+              outline: panelPulse ? '2px solid var(--jazer-electric-purple)' : 'none',
+              outlineOffset: panelPulse ? '2px' : '0',
+              overscrollBehavior: 'contain',
+              paddingBottom: !isDesktop ? '8rem' : undefined
+            }}
+          >
+            <section
+              ref={(el) => { if (el) sectionRefs.current['brandControls'] = el; }}
+              className="space-y-4 bg-white/5 border border-white/10 rounded-2xl p-5"
+            >
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.3em] text-neutral-400">Brand Kit</p>
+                  <h3 className="text-base font-semibold text-white">Global Palette</h3>
+                </div>
+                <div className="flex items-center gap-2">
+                  <select aria-label="Select brand kit" value={activeBrandId} onChange={(e) => handleBrandChange(e.target.value)} className="bg-[#0B0E12] border border-white/10 rounded-full text-xs text-white px-3 py-1.5">
+                    <option value="none">None</option>
+                    <option value="jazer">JaZeR Neon</option>
+                    {hasCustomBrandTheme && (
+                      <option value="custom">{customBrandLabel}</option>
+                    )}
+                  </select>
+                  {onLaunchBrandGenerator && (
+                    <button
+                      type="button"
+                      onClick={onLaunchBrandGenerator}
+                      className="text-[11px] px-3 py-1.5 rounded-full border border-cyan-400/60 text-cyan-100 hover:border-cyan-200 transition"
+                    >
+                      Launch Generator
+                    </button>
+                  )}
+                </div>
+              </div>
+              <div className="grid md:grid-cols-2 gap-3">
+                <div className="space-y-3">
+                  {activeBrandId === 'jazer' && (
+                    <div className="p-3 bg-purple-500/10 border border-purple-400/40 rounded-xl text-xs text-purple-100 space-y-1">
+                      <div className="font-semibold flex items-center gap-2"><Sparkles className="w-3 h-3" /> Official JaZeR Kit</div>
+                      <p className="text-purple-200/80">Orbitron & Montserrat fonts, neon gradient accents, and night-mode canvas.</p>
+                    </div>
+                  )}
+                  {activeBrandId === 'custom' && effectiveBrandTheme && (
+                    <div className="p-3 bg-cyan-500/10 border border-cyan-400/40 rounded-xl text-xs text-cyan-100 space-y-2">
+                      <div className="font-semibold flex items-center gap-2">
+                        <Sparkles className="w-3 h-3" /> {customBrandLabel}
+                      </div>
+                      <p className="text-cyan-100/80">Widgets are synced with your logo palette.</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {[
+                          { label: 'Background', color: effectiveBrandTheme.backgroundColor || effectiveBrandTheme.background },
+                          { label: 'Primary', color: effectiveBrandTheme.clockColor || effectiveBrandTheme.primary },
+                          { label: 'Digits', color: effectiveBrandTheme.digitColor || effectiveBrandTheme.secondary },
+                          { label: 'Text', color: effectiveBrandTheme.textColor || effectiveBrandTheme.text }
+                        ].map(({ label, color }) => (
+                          <div key={label} className="text-center">
+                            <div className="h-10 rounded border border-white/20" style={{ backgroundColor: color || '#0B0E12' }} />
+                            <div className="mt-1 text-[9px] uppercase text-neutral-400">{label}</div>
+                            <div className="text-[9px] font-mono text-neutral-300">{color || '--'}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+                {activeBrandId === 'custom' && effectiveBrandTheme?.palette?.length > 0 && (
+                  <div className="bg-[#0B0E12] border border-white/10 rounded-xl p-3">
+                    <div className="text-[10px] uppercase text-neutral-500 mb-2">Palette Swatches</div>
+                    <div className="grid grid-cols-5 gap-2">
+                      {effectiveBrandTheme.palette.map((color, idx) => (
+                        <div key={`${color}-${idx}`} className="text-center">
+                          <div className="w-full h-10 rounded border border-white/10" style={{ backgroundColor: color }} />
+                          <div className="text-[8px] text-neutral-400 truncate mt-1">{color}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {activeBrandId === 'jazer' && <BrandColorPalette />}
+              </div>
+            </section>
+
+            <section
+              ref={(el) => { if (el) sectionRefs.current['appearanceControls'] = el; }}
+              className="space-y-4 bg-white/5 border border-white/10 rounded-2xl p-5"
+            >
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <p className="text-[10px] uppercase tracking-[0.3em] text-neutral-400">Surface</p>
+                  <h3 className="text-base font-semibold text-white">Canvas & Appearance</h3>
+                </div>
+                {config.fontSize !== undefined && (
+                  <div className="text-[11px] text-neutral-400">
+                    {config.fontSize}px
+                  </div>
+                )}
+              </div>
+              {config.fontSize !== undefined && (
+                <div className="space-y-1.5">
+                  <div className="flex justify-between">
+                    <label className="block text-xs font-medium text-neutral-400">Font Size</label>
+                  </div>
+                  <input aria-label="Font size slider" type="range" min={MIN_FONT_SIZE} max={MAX_FONT_SIZE} value={config.fontSize} onChange={(e) => handleConfigChange('fontSize', parseInt(e.target.value))} className="w-full h-2 bg-neutral-800 rounded-full appearance-none cursor-pointer accent-purple-500" />
+                </div>
+              )}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-neutral-400 mb-1">Background</label>
+                  <div className="flex items-center gap-2 border border-white/10 p-2 rounded-lg">
+                    <input aria-label="Background color" type="color" value={config.bgColor} onChange={(e) => handleConfigChange('bgColor', e.target.value)} className="w-8 h-8 rounded border-none" />
+                    <span className="text-[10px] font-mono text-neutral-400">{config.bgColor}</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-neutral-400 mb-1">Text</label>
+                  <div className="flex items-center gap-2 border border-white/10 p-2 rounded-lg">
+                    <input aria-label="Text color" type="color" value={config.textColor || '#000000'} onChange={(e) => handleConfigChange('textColor', e.target.value)} className="w-8 h-8 rounded border-none" />
+                    <span className="text-[10px] font-mono text-neutral-400">{config.textColor}</span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <section className="space-y-4 bg-white/5 border border-white/10 rounded-2xl p-5">
+              <div className="flex items-center justify-between text-xs font-bold text-neutral-400 uppercase">
+                <span className="flex items-center gap-2"><Search className="w-3 h-3" /> Quick Find</span>
+                {configSearch && (
+                  <button
+                    type="button"
+                    onClick={() => handleConfigSearchChange('')}
+                    className="text-[10px] text-neutral-300 hover:text-white transition-colors"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <div className="relative">
+                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+                <input
+                  type="text"
+                  value={configSearch}
+                  onChange={(e) => handleConfigSearchChange(e.target.value)}
+                  placeholder="Search labels, sections, or controls..."
+                  className="w-full bg-white/5 border border-white/10 rounded-full py-2.5 pl-10 pr-3 text-sm text-white placeholder:text-neutral-400 focus:outline-none focus:border-purple-400 focus:ring-0"
+                />
+              </div>
+              {sectionOutline.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {sectionOutline.map((section) => (
+                    <button
+                      key={section.id}
+                      type="button"
+                      onClick={() => handleCustomizeRequest(section.id)}
+                      className={`px-3 py-1.5 rounded-full border text-[11px] ${highlightedSection === section.id ? 'border-purple-400 text-white bg-purple-500/20' : 'border-white/10 text-neutral-300 hover:border-purple-300 hover:text-white'}`}
+                    >
+                      {section.label} · {section.controlCount}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </section>
+
           <BrandLogoUploader
             onColorsExtracted={(theme) => {
+              if (!theme) {
+                syncBrandTheme(null);
+                setConfig(prev => {
+                  if (!prev.brandThemeSnapshot) return prev;
+                  const next = { ...prev };
+                  delete next.brandThemeSnapshot;
+                  return next;
+                });
+                return;
+              }
+
+              const snapshot = normalizeBrandTheme(theme, { appliedAt: new Date().toISOString() });
+              if (!snapshot) return;
+
               // Save brand theme for generating dynamic presets
-              setBrandTheme(theme);
+              syncBrandTheme(snapshot);
 
               // Apply extracted colors to widget configuration
-              const newConfig = { ...config };
+              const newConfig = {
+                ...config,
+                brandThemeSnapshot: snapshot
+              };
+              const backgroundColor = snapshot.backgroundColor || snapshot.background;
+              const textColor = snapshot.textColor || snapshot.text;
+              const contrastBackground = snapshot.text || snapshot.textColor || '#0B0E12';
+              const contrastText = snapshot.background || snapshot.backgroundColor || '#F8F9FF';
+              const primaryColor = snapshot.clockColor || snapshot.primary || snapshot.primaryColor;
+              const secondaryColor = snapshot.digitColor || snapshot.secondary || snapshot.secondaryColor || primaryColor;
+              const accentColor = snapshot.accentColor || snapshot.accent || primaryColor;
+              const palette = Array.isArray(snapshot.palette) ? snapshot.palette : [];
 
               // ===== WIDGETS WITH LIGHTMODE/DARKMODE OBJECTS =====
               if (activeWidgetId === 'clock') {
                 newConfig.lightMode = {
                   ...newConfig.lightMode,
-                  textColor: theme.text,
-                  panelColor: theme.background,
-                  digitColor: theme.primary,
-                  clockColor: theme.primary,
-                  backgroundColor: theme.background
+                  textColor,
+                  panelColor: backgroundColor,
+                  digitColor: primaryColor,
+                  clockColor: primaryColor,
+                  backgroundColor
                 };
                 newConfig.darkMode = {
                   ...newConfig.darkMode,
-                  textColor: theme.background,
-                  panelColor: theme.text,
-                  digitColor: theme.secondary,
-                  clockColor: theme.accent,
-                  backgroundColor: theme.text
+                  textColor: contrastText,
+                  panelColor: contrastBackground,
+                  digitColor: secondaryColor,
+                  clockColor: accentColor,
+                  backgroundColor: contrastBackground
                 };
-                newConfig.bgColor = theme.background;
+                newConfig.bgColor = backgroundColor;
               } 
               
               else if (activeWidgetId === 'countdown') {
                 newConfig.lightMode = {
                   ...newConfig.lightMode,
-                  textColor: theme.text,
-                  panelColor: theme.background,
-                  digitColor: theme.primary,
-                  backgroundColor: theme.background
+                  textColor,
+                  panelColor: backgroundColor,
+                  digitColor: primaryColor,
+                  backgroundColor
                 };
                 newConfig.darkMode = {
                   ...newConfig.darkMode,
-                  textColor: theme.background,
-                  panelColor: theme.text,
-                  digitColor: theme.secondary,
-                  backgroundColor: theme.text
+                  textColor: contrastText,
+                  panelColor: contrastBackground,
+                  digitColor: secondaryColor,
+                  backgroundColor: contrastBackground
                 };
-                newConfig.bgColor = theme.background;
+                newConfig.bgColor = backgroundColor;
               } 
               
               else if (activeWidgetId === 'quotes') {
                 newConfig.lightMode = {
                   ...newConfig.lightMode,
-                  textColor: theme.text,
-                  authorColor: theme.secondary,
-                  backgroundColor: theme.background
+                  textColor,
+                  authorColor: secondaryColor,
+                  backgroundColor
                 };
                 newConfig.darkMode = {
                   ...newConfig.darkMode,
-                  textColor: theme.background,
-                  authorColor: theme.accent,
-                  backgroundColor: theme.text
+                  textColor: contrastText,
+                  authorColor: accentColor,
+                  backgroundColor: contrastBackground
                 };
-                newConfig.bgColor = theme.background;
+                newConfig.bgColor = backgroundColor;
               } 
               
-              else if (activeWidgetId === 'lifeProgress') {
-                newConfig.lightMode = {
-                  ...newConfig.lightMode,
-                  textColor: theme.text,
-                  barColor: theme.primary,
-                  backgroundColor: theme.background
-                };
-                newConfig.darkMode = {
-                  ...newConfig.darkMode,
-                  textColor: theme.background,
-                  barColor: theme.accent,
-                  backgroundColor: theme.text
-                };
-                newConfig.bgColor = theme.background;
-              }
-              
               // ===== WIDGETS WITH SEPARATE COLOR PROPS =====
-              else if (activeWidgetId === 'counter') {
-                newConfig.lightTextColor = theme.text;
-                newConfig.darkTextColor = theme.background;
-                newConfig.bgColor = theme.background;
+              if (activeWidgetId === 'counter') {
+                newConfig.lightTextColor = textColor;
+                newConfig.darkTextColor = contrastBackground;
+                newConfig.bgColor = backgroundColor;
               } 
               
               else if (activeWidgetId === 'weather') {
-                newConfig.bgColor = theme.background;
-                newConfig.textColor = theme.text;
-                newConfig.accentColor = theme.primary;
+                newConfig.bgColor = backgroundColor;
+                newConfig.textColor = textColor;
+                newConfig.accentColor = accentColor;
               } 
               
               else if (activeWidgetId === 'imageGallery') {
-                newConfig.bgColor = theme.background;
+                newConfig.bgColor = backgroundColor;
               }
               
               // ===== BUTTON GENERATOR (SPECIAL CASE) =====
               else if (activeWidgetId === 'newButtonGenerator') {
                 // Apply to all buttons using full color palette
+                const paletteSource = palette.length > 0 ? palette : [primaryColor, accentColor, textColor].filter(Boolean);
                 if (newConfig.buttons && Array.isArray(newConfig.buttons)) {
                   newConfig.buttons = newConfig.buttons.map((btn, idx) => ({
                     ...btn,
-                    backgroundColor: theme.palette[idx % theme.palette.length] || theme.primary,
-                    textColor: theme.background,
-                    outlineColor: theme.accent,
-                    hoverBackgroundColor: theme.background,
-                    hoverTextColor: theme.palette[idx % theme.palette.length] || theme.primary
+                    backgroundColor: paletteSource[idx % paletteSource.length] || primaryColor,
+                    textColor,
+                    outlineColor: accentColor,
+                    hoverBackgroundColor: backgroundColor,
+                    hoverTextColor: paletteSource[idx % paletteSource.length] || primaryColor
                   }));
                 }
-                newConfig.bgColor = theme.background;
+                newConfig.bgColor = backgroundColor;
               }
               
               // ===== INLINE WIDGETS =====
               else if (activeWidgetId === 'simpleList') {
-                newConfig.bgColor = theme.background;
-                newConfig.textColor = theme.text;
-                newConfig.accentColor = theme.primary;
+                newConfig.bgColor = backgroundColor;
+                newConfig.textColor = textColor;
+                newConfig.accentColor = accentColor;
               } 
               
               else if (activeWidgetId === 'pomodoro') {
-                newConfig.bgColor = theme.background;
-                newConfig.textColor = theme.text;
-                newConfig.accentColor = theme.primary;
+                newConfig.bgColor = backgroundColor;
+                newConfig.textColor = textColor;
+                newConfig.accentColor = accentColor;
               } 
-              
-              else if (activeWidgetId === 'logo') {
-                newConfig.bgColor = theme.background;
-                // Apply brand color to glow effect
-                newConfig.glowColor = theme.primary;
-              } 
-              
-              else if (activeWidgetId === 'cosmic') {
-                newConfig.bgColor = theme.text; // Use darker color for cosmic bg
-                newConfig.accentColor = theme.primary;
-              }
               
               // ===== FALLBACK FOR ANY FUTURE WIDGETS =====
               else {
-                newConfig.bgColor = theme.background;
-                newConfig.textColor = theme.text;
+                newConfig.bgColor = backgroundColor;
+                newConfig.textColor = textColor;
                 if (newConfig.accentColor !== undefined) {
-                  newConfig.accentColor = theme.primary;
+                  newConfig.accentColor = accentColor;
                 }
               }
 
@@ -1863,96 +3651,21 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme }) {
             }}
           />
 
-          <hr className="border-neutral-100" />
-
-          {/* Global Appearance */}
+          {/* Fields - Grouped by Section */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-xs font-bold text-neutral-400 uppercase"><Palette className="w-3 h-3" /> Appearance</div>
-            {config.fontSize !== undefined && (
-              <div className="space-y-1.5">
-                <div className="flex justify-between"><label className="block text-xs font-medium text-neutral-600">Font Size</label><span className="text-xs text-neutral-400">{config.fontSize}px</span></div>
-                <input aria-label="Font size slider" type="range" min={MIN_FONT_SIZE} max={MAX_FONT_SIZE} value={config.fontSize} onChange={(e) => handleConfigChange('fontSize', parseInt(e.target.value))} className="w-full h-1.5 bg-neutral-200 rounded-lg appearance-none cursor-pointer accent-blue-600" />
+            <div className="flex items-center gap-2 text-xs font-bold text-neutral-400 uppercase">
+              <Settings className="w-3 h-3" /> Widget Controls
+            </div>
+
+            {configSectionNodes}
+            {hasMoreSections && (
+              <div
+                ref={infiniteScrollRef}
+                className="py-4 text-center text-[11px] text-neutral-400"
+              >
+                Keep scrolling to load more controls...
               </div>
             )}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-medium text-neutral-600 mb-1.5">Background</label>
-                <div className="flex items-center gap-2 border border-neutral-200 p-1 rounded"><input aria-label="Background color" type="color" value={config.bgColor} onChange={(e) => handleConfigChange('bgColor', e.target.value)} className="w-6 h-6 rounded cursor-pointer border-none" /><span className="text-[10px] font-mono text-neutral-400">{config.bgColor}</span></div>
-              </div>
-              <div>
-                <label className="block text-xs font-medium text-neutral-600 mb-1.5">Text</label>
-                <div className="flex items-center gap-2 border border-neutral-200 p-1 rounded"><input aria-label="Text color" type="color" value={config.textColor || '#000000'} onChange={(e) => handleConfigChange('textColor', e.target.value)} className="w-6 h-6 rounded cursor-pointer border-none" /><span className="text-[10px] font-mono text-neutral-400">{config.textColor}</span></div>
-              </div>
-            </div>
-          </div>
-
-          <hr className="border-neutral-100" />
-
-          {/* Fields - Grouped by Section */}
-          <div className="space-y-6">
-            <div className="flex items-center gap-2 text-xs font-bold text-neutral-400 uppercase">
-              <Settings className="w-3 h-3" /> Settings
-            </div>
-
-            {/* Group fields by section */}
-            {['time', 'style', 'analog', 'typography', 'background', 'interactive', 'theme', 'appearance', 'features', 'effects'].map(section => {
-              const sectionFields = ActiveWidget.fields.filter(f => f.section === section);
-              if (sectionFields.length === 0) return null;
-
-              const sectionTitles = {
-                time: 'Time Display',
-                style: 'Clock Style',
-                analog: 'Analog Customization',
-                typography: 'Typography',
-                background: 'Background',
-                interactive: 'Interactive Mode',
-                theme: 'Preset Themes',
-                appearance: 'Appearance Mode',
-                features: 'Additional Features',
-                effects: 'Visual Effects',
-                event: 'Event Setup',
-                units: 'Time Units',
-                completion: 'Completion'
-              };
-
-              return (
-                <div key={section} className="space-y-3">
-                  <div className="text-xs font-semibold text-neutral-500 uppercase tracking-wide border-b pb-1">
-                    {sectionTitles[section]}
-                  </div>
-                  {sectionFields.map(f => {
-                    // Dynamically add brand preset options to presetTheme field
-                    let field = f;
-                    if (f.name === 'presetTheme' && brandTheme && activeWidgetId === 'clock') {
-                      const brandPresets = [
-                        { label: '--- Brand-Based Themes ---', value: '__separator__', disabled: true },
-                        { label: 'Brand Monochrome', value: 'brand-monochrome' },
-                        { label: 'Brand Contrast', value: 'brand-contrast' },
-                        { label: 'Brand Vibrant', value: 'brand-vibrant' },
-                        { label: 'Brand Professional', value: 'brand-professional' },
-                        { label: 'Brand Dark', value: 'brand-dark' },
-                        { label: 'Brand Light', value: 'brand-light' },
-                        { label: 'Brand Neon', value: 'brand-neon' },
-                        { label: 'Brand Minimal', value: 'brand-minimal' }
-                      ];
-                      field = {
-                        ...f,
-                        options: [...f.options, ...brandPresets]
-                      };
-                    }
-
-                    return (
-                      <WidgetField
-                        key={f.name}
-                        field={field}
-                        value={config[f.name]}
-                        onChange={(val) => handleConfigChange(f.name, val)}
-                      />
-                    );
-                  })}
-                </div>
-              );
-            })}
           </div>
 
           <div className="space-y-3 mt-8">
@@ -2021,8 +3734,27 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme }) {
           )}
 
         </div>
+        {!isDesktop && (
+          <div className="fixed bottom-4 left-4 right-4 z-30 flex items-center gap-3 bg-[#0A0C12]/95 border border-white/10 rounded-full px-4 py-2 shadow-lg shadow-black/40 backdrop-blur">
+            <button
+              type="button"
+              onClick={() => setShowTabMenu(true)}
+              className="flex-1 px-3 py-2 rounded-full text-xs font-semibold uppercase tracking-[0.3em] border border-white/15 text-neutral-200 hover:border-purple-300 hover:text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400"
+            >
+              Sections
+            </button>
+            <button
+              type="button"
+              onClick={() => setShowExport(true)}
+              className="flex-1 px-3 py-2 rounded-full text-xs font-semibold uppercase tracking-[0.3em] border border-white/15 text-neutral-200 hover:border-pink-300 hover:text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-300"
+            >
+              Export
+            </button>
+          </div>
+        )}
       </div>
     </div>
+  </div>
   );
 }
 
@@ -2038,7 +3770,10 @@ export default function App() {
   // State management
   const [view, setView] = useState('landing'); // 'landing' | 'builder' | 'brand-generator'
   const [selectedWidgetId, setSelectedWidgetId] = useState('clock');
-  const [globalBrandTheme, setGlobalBrandTheme] = useState(null);
+  const [globalBrandTheme, setGlobalBrandTheme] = useState(() => loadStoredBrandTheme());
+  const [returnView, setReturnView] = useState('landing');
+  const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
+  const [searchInputRef, setSearchInputRef] = useState(null);
 
   const navigateToBuilder = (id) => {
     setSelectedWidgetId(id);
@@ -2046,6 +3781,7 @@ export default function App() {
   };
 
   const navigateToBrandGenerator = () => {
+    setReturnView(view);
     setView('brand-generator');
   };
 
@@ -2053,22 +3789,48 @@ export default function App() {
     setView('landing');
   };
 
+  const handleBrandGeneratorBack = useCallback(() => {
+    setView(returnView || 'landing');
+  }, [returnView]);
+
   const handleThemeGenerated = (theme) => {
-    setGlobalBrandTheme(theme);
+    setGlobalBrandTheme(theme ? normalizeBrandTheme(theme) : null);
   };
 
-  // Load global brand theme on mount
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('jazer_global_brand_theme');
-    const isActive = localStorage.getItem('jazer_global_brand_active');
-    if (savedTheme && isActive === 'true') {
-      try {
-        setGlobalBrandTheme(JSON.parse(savedTheme));
-      } catch (e) {
-        console.error('Failed to load global brand theme:', e);
+  // Keyboard shortcuts
+  useKeyboardShortcuts({
+    'cmd+k': () => {
+      // Quick widget switcher - navigate to widget landing page for now
+      // TODO: Implement modal quick switcher in future enhancement
+      navigateToHome();
+    },
+    'cmd+e': () => {
+      // Open export - only works in builder view
+      // This will be handled by the builder component when in that view
+      if (view === 'builder') {
+        // Export modal trigger will be passed down to builder component
       }
+    },
+    'cmd+b': () => {
+      navigateToBrandGenerator();
+    },
+    'cmd+/': () => {
+      // Focus search input
+      if (searchInputRef) {
+        searchInputRef.focus();
+      }
+    },
+    '?': (e) => {
+      // Don't trigger in input fields
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        return;
+      }
+      setShowShortcutsHelp(true);
+    },
+    'Escape': () => {
+      setShowShortcutsHelp(false);
     }
-  }, []);
+  }, !isEmbedMode); // Disable shortcuts in embed mode
 
   // Handle embed mode first (before normal app render)
   if (isEmbedMode && urlWidgetId && WIDGET_REGISTRY[urlWidgetId]) {
@@ -2099,34 +3861,68 @@ export default function App() {
         overflow: 'hidden'
       }}>
         <div className="w-full h-full">
-          <WidgetComponent config={widgetConfig} />
+          <WidgetComponent config={widgetConfig} brandTheme={widgetConfig.brandThemeSnapshot} />
         </div>
       </div>
     );
   }
 
-  // Normal app mode - View routing
+  const brandLabel = globalBrandTheme?.presetName || globalBrandTheme?.name || 'Custom Brand Theme';
+  const builderThemeKey = globalBrandTheme
+    ? `${globalBrandTheme.presetName || globalBrandTheme.name || 'custom'}-${globalBrandTheme.appliedAt || globalBrandTheme.backgroundColor || 'base'}`
+    : 'none';
+
   return (
-    <>
+    <ToastProvider>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Orbitron:wght@400;700&family=Montserrat:wght@400;600&display=swap');
         ${BRAND_KITS.jazer.extraCSS}
       `}</style>
 
-      {view === 'landing' ? (
-        <WidgetLandingPage onSelect={navigateToBuilder} onBrandGenerator={navigateToBrandGenerator} />
-      ) : view === 'brand-generator' ? (
-        <BrandThemeGenerator 
-          onBack={navigateToHome} 
-          onThemeGenerated={handleThemeGenerated}
+      <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--jazer-night-black)' }}>
+        <GlobalNavigation
+          currentView={view}
+          onNavigateHome={navigateToHome}
+          onNavigateBuilder={() => navigateToBuilder(selectedWidgetId || 'clock')}
+          onNavigateBrand={navigateToBrandGenerator}
+          onOpenHelp={() => setShowShortcutsHelp(true)}
+          selectedWidgetId={selectedWidgetId}
+          selectedWidgetLabel={WIDGET_REGISTRY[selectedWidgetId]?.label || ''}
+          hasBrandTheme={Boolean(globalBrandTheme)}
+          brandLabel={brandLabel}
         />
-      ) : (
-        <NotionWidgetBuilder 
-          initialWidgetId={selectedWidgetId} 
-          onBack={navigateToHome}
-          globalBrandTheme={globalBrandTheme}
+        <div className="flex-1 w-full">
+          {view === 'landing' ? (
+            <WidgetLandingPage 
+              onSelect={navigateToBuilder} 
+              onBrandGenerator={navigateToBrandGenerator}
+              setSearchInputRef={setSearchInputRef}
+            />
+          ) : view === 'brand-generator' ? (
+            <WidgetErrorBoundary>
+              <BrandThemeGenerator 
+                onBack={handleBrandGeneratorBack} 
+                onThemeGenerated={handleThemeGenerated}
+              />
+            </WidgetErrorBoundary>
+          ) : (
+            <NotionWidgetBuilder
+              key={builderThemeKey}
+              initialWidgetId={selectedWidgetId}
+              onBack={navigateToHome}
+              globalBrandTheme={globalBrandTheme}
+              onBrandThemeUpdate={handleThemeGenerated}
+              onLaunchBrandGenerator={navigateToBrandGenerator}
+            />
+          )}
+        </div>
+        
+        {/* Keyboard shortcuts help modal */}
+        <KeyboardShortcutsHelp 
+          isOpen={showShortcutsHelp} 
+          onClose={() => setShowShortcutsHelp(false)} 
         />
-      )}
-    </>
+      </div>
+    </ToastProvider>
   );
 }

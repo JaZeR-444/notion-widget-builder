@@ -15,6 +15,7 @@ export const quotesConfig = {
     // Display Options
     showRefreshIcon: true,
     autoRefreshInterval: 0, // in minutes
+    useQuoteAPI: true,
 
     // Background Options
     useTransparentBackground: false,
@@ -81,6 +82,12 @@ export const quotesConfig = {
     {
       name: 'showRefreshIcon',
       label: 'Show Refresh Icon',
+      type: 'boolean',
+      section: 'displayOptions'
+    },
+    {
+      name: 'useQuoteAPI',
+      label: 'Fetch Quotes from API',
       type: 'boolean',
       section: 'displayOptions'
     },

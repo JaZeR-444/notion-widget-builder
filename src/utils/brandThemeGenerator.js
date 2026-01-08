@@ -45,7 +45,7 @@ export const generateBrandPresets = (brandTheme) => {
     return [];
   }
 
-  const { palette, primary, secondary, accent } = brandTheme;
+  const { palette, primary, accent } = brandTheme;
   const sorted = sortByLuminance(palette);
   const darkest = sorted[0];
   const lightest = sorted[sorted.length - 1];

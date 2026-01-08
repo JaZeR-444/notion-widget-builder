@@ -1,6 +1,10 @@
 // Quotes Widget HTML and Script Export
 // Generates standalone HTML with embedded JAZER_BRAND styles
 
+import { jazerNeonTheme } from '../../theme/jazerNeonTheme';
+
+const theme = jazerNeonTheme;
+
 const escapeHTML = (str) => {
   if (typeof str !== 'string') return str;
   const map = {
@@ -262,13 +266,13 @@ export const generateHTML = (config) => {
   ` : ''}
 
   <script>
-    ${generateQuotesScript(config)}
+    ${generateScript(config)}
   </script>
 </body>
 </html>`;
 };
 
-export const generateScript = (config) => {
+export const generateScript = () => {
   return `
     const exampleQuotes = [
       { text: "The only way to do great work is to love what you do.", author: "Steve Jobs" },

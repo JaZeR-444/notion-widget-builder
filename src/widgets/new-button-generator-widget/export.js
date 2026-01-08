@@ -2,12 +2,13 @@ import { jazerNeonTheme } from '../../theme/jazerNeonTheme'; // Import jazerNeon
 
 const escapeHTML = (str) => {
   if (typeof str !== 'string') return str;
-  return str.replace(/[&<>'"]/,
-    tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag]));
+  const entities = { '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' };
+  return str.replace(/[&<>'"]/g, (tag) => entities[tag]);
 };
 
 export const generateHTML = (config) => {
   const widgetBg = config.useTransparentBackground ? 'transparent' : config.backgroundColor;
+  const buttons = Array.isArray(config.buttons) ? config.buttons : [];
 
   const getButtonStyle = (button) => {
     const borderRadius = button.rounding === 'none' ? '0px' :
@@ -18,36 +19,31 @@ export const generateHTML = (config) => {
       button.size === 'large' ? '1.25rem' : '1rem';
     const outlineWidth = button.outlineColor === 'transparent' ? '0px' : '1px';
 
-    let buttonCss = `
+    const hoverBg = button.enableHoverHighlight ? button.hoverBgColor : button.bgColor;
+    const hoverText = button.enableHoverHighlight ? button.hoverTextColor : button.textColor;
+
+    return `
           background-color: ${button.bgColor}${button.bgOpacity < 100 ? Math.round(255 * (button.bgOpacity / 100)).toString(16).padStart(2, '0') : ''};
           color: ${button.textColor};
           border: ${outlineWidth} solid ${button.outlineColor};
           border-radius: ${borderRadius};
           padding: ${sizePadding};
           font-size: ${fontSize};
-          font-family: inherit; // Use inherited font, can be configured later
+          font-family: inherit;
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 8px;
           text-decoration: none;
           cursor: pointer;
-          flex-shrink: 0; // Prevent shrinking in horizontal layout
+          flex-shrink: 0;
           width: ${config.layout === 'full-width' ? '100%' : 'auto'};
           text-align: center;
           box-shadow: 0 0 ${jazerNeonTheme.effects.glowBlur} rgba(0,0,0,0.2);
           transition: all 0.2s ease-in-out;
+          --hover-bg: ${hoverBg};
+          --hover-text: ${hoverText};
       `;
-
-    if (button.enableHoverHighlight) {
-      buttonCss += `
-          &:hover {
-              background-color: ${button.hoverBgColor};
-              color: ${button.hoverTextColor};
-          }
-        `;
-    }
-    return buttonCss;
   };
 
   const containerStyle = `
@@ -78,7 +74,7 @@ export const generateHTML = (config) => {
       box-sizing: border-box;
     ">
       <div style="${containerStyle}">
-        ${config.buttons.map(button => `
+        ${buttons.map(button => `
           <a href="${escapeHTML(button.url)}" target="_blank" rel="noopener noreferrer" 
              style="${getButtonStyle(button)}"
              class="generated-button"
@@ -90,8 +86,8 @@ export const generateHTML = (config) => {
       </div>
       <style>
         .generated-button:hover {
-            background-color: var(--hover-bg);
-            color: var(--hover-text);
+          background-color: var(--hover-bg);
+          color: var(--hover-text);
         }
       </style>
     </div>

@@ -1,6 +1,10 @@
 // Weather Widget HTML and Script Export
 // Generates standalone HTML with embedded JAZER_BRAND styles
 
+import { jazerNeonTheme } from '../../theme/jazerNeonTheme';
+
+const theme = jazerNeonTheme;
+
 // Constants
 const REFRESH_INTERVAL_MS = 600000; // 10 minutes
 const MIN_FORECAST_DAYS = 1;

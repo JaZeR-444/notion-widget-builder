@@ -1,15 +1,22 @@
 import React, { useState, useEffect, useMemo } from 'react';
 
-export const ImageGalleryWidget = ({ config }) => {
+export const ImageGalleryWidget = ({ config, onCustomizeRequest }) => {
   const images = (config.images || []).filter(Boolean); // Ensure no empty strings
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [systemPrefersDark, setSystemPrefersDark] = useState(() => 
-    window.matchMedia('(prefers-color-scheme: dark)').matches
-  );
+  const [systemPrefersDark, setSystemPrefersDark] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
   const [imageError, setImageError] = useState(false);
+  const autoplayInterval = useMemo(() => {
+    const parsed = parseFloat(config.scrollSpeed);
+    const seconds = Number.isFinite(parsed) && parsed > 0 ? parsed : 5;
+    return seconds * 1000;
+  }, [config.scrollSpeed]);
 
   // Subscribe to system preference changes
   useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
     const mq = window.matchMedia('(prefers-color-scheme: dark)');
     const handler = (e) => setSystemPrefersDark(e.matches);
     mq.addEventListener('change', handler);
@@ -24,16 +31,28 @@ export const ImageGalleryWidget = ({ config }) => {
     return systemPrefersDark;
   }, [config.appearanceMode, systemPrefersDark]);
 
+  useEffect(() => {
+    let raf = requestAnimationFrame(() => {});
+    if (images.length === 0) {
+      raf = requestAnimationFrame(() => setCurrentImageIndex(0));
+    } else {
+      raf = requestAnimationFrame(() => {
+        setCurrentImageIndex((prev) => Math.min(prev, images.length - 1));
+      });
+    }
+    return () => cancelAnimationFrame(raf);
+  }, [images.length]);
+
   // Handle autoplay
   useEffect(() => {
     if (config.animateGallerySpeedToggle && images.length > 1) {
-      const speedMs = parseFloat(config.scrollSpeed) * 1000;
+      const speedMs = autoplayInterval;
       const interval = setInterval(() => {
         setCurrentImageIndex((prevIndex) => (prevIndex + 1) % images.length);
       }, speedMs);
       return () => clearInterval(interval);
     }
-  }, [config.animateGallerySpeedToggle, config.scrollSpeed, images.length]);
+  }, [config.animateGallerySpeedToggle, images.length, autoplayInterval]);
 
   if (images.length === 0) {
     return (
@@ -119,6 +138,7 @@ export const ImageGalleryWidget = ({ config }) => {
       {config.showCustomizeButton && (
         <button
           className="absolute bottom-4 right-4 px-4 py-2 rounded-lg text-sm font-medium bg-blue-500 text-white"
+          onClick={() => onCustomizeRequest?.('imageManagement')}
         >
           Customize
         </button>

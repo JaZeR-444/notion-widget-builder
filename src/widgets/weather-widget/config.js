@@ -24,8 +24,8 @@ export const weatherConfig = {
 
   defaultConfig: {
     // Location Settings
-    weatherLocation: 'New York, NY',
-    useGeolocation: false,
+    weatherLocation: 'Austin, TX',
+    useGeolocation: true,
     preferredUnits: 'imperial', // 'imperial' | 'metric'
     numberOfDays: 5,
 
@@ -39,6 +39,7 @@ export const weatherConfig = {
 
     // Layout Options
     orientation: 'auto', // 'auto' | 'horizontal' | 'compact' | 'wide'
+    widgetSize: 'medium', // 'small' | 'medium' | 'large' | 'xlarge'
 
     // Visual Options
     animateIcons: true,
@@ -46,9 +47,15 @@ export const weatherConfig = {
     textShadows: false,
     fontScale: 1.0,
 
-    // Appearance - Unified color management
+    // Appearance - Flat color properties for direct access
     appearanceMode: 'system', // 'light' | 'dark' | 'system'
     useTransparentBackground: false,
+    textColorLight: jazerNeonTheme.colors.graphite,
+    textColorDark: jazerNeonTheme.colors.stardustWhite,
+    backgroundColor: jazerNeonTheme.colors.nightBlack,
+    setBackgroundColor: false,
+    
+    // Nested theme config (for backward compatibility)
     theme: {
       light: {
         textColor: jazerNeonTheme.colors.graphite,
@@ -94,7 +101,7 @@ export const weatherConfig = {
       required: true,
       type: 'array',
       minItems: 1,
-      maxItems: 4
+      maxItems: 6
     },
     dailyWeatherFields: {
       required: true,
@@ -161,15 +168,20 @@ export const weatherConfig = {
       label: 'Current Weather Fields',
       type: 'multiselect',
       section: 'displayConfiguration',
-      helpText: 'Select 1-4 fields to display',
-      maxItems: 4,
+      helpText: 'Select 1-6 fields to display',
+      maxItems: 6,
       options: [
         { label: 'Temperature', value: 'temperature' },
         { label: 'Condition', value: 'condition' },
         { label: 'Humidity', value: 'humidity' },
         { label: 'Wind Speed', value: 'wind' },
         { label: 'Feels Like', value: 'feelsLike' },
-        { label: 'UV Index', value: 'uvIndex' }
+        { label: 'UV Index', value: 'uvIndex' },
+        { label: 'Cloud Cover', value: 'cloudCover' },
+        { label: 'Pressure', value: 'pressure' },
+        { label: 'Visibility', value: 'visibility' },
+        { label: 'Sunrise', value: 'sunrise' },
+        { label: 'Sunset', value: 'sunset' }
       ]
     },
     {
@@ -182,7 +194,11 @@ export const weatherConfig = {
         { label: 'Low Temp', value: 'low' },
         { label: 'Condition', value: 'condition' },
         { label: 'Precipitation', value: 'precipitation' },
-        { label: 'Wind', value: 'wind' }
+        { label: 'Wind', value: 'wind' },
+        { label: 'UV Index', value: 'uvIndex' },
+        { label: 'Humidity', value: 'humidity' },
+        { label: 'Sunrise', value: 'sunrise' },
+        { label: 'Sunset', value: 'sunset' }
       ]
     },
 
@@ -213,6 +229,19 @@ export const weatherConfig = {
         { label: 'Horizontal', value: 'horizontal' },
         { label: 'Compact', value: 'compact' },
         { label: 'Wide', value: 'wide' }
+      ]
+    },
+    {
+      name: 'widgetSize',
+      label: 'Widget Size',
+      type: 'select',
+      section: 'layoutOptions',
+      helpText: 'Control the overall dimensions of the widget',
+      options: [
+        { label: 'Small', value: 'small' },
+        { label: 'Medium', value: 'medium' },
+        { label: 'Large', value: 'large' },
+        { label: 'Extra Large', value: 'xlarge' }
       ]
     },
 

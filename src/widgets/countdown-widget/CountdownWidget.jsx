@@ -1,27 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-
-// JAZER_BRAND constants
-const JAZER_BRAND = {
-  colors: {
-    electricPurple: '#8B5CF6',
-    cosmicBlue: '#3B82F6',
-    neonPink: '#EC4899',
-    sunburstGold: '#F59E0B',
-    aetherTeal: '#06B6D4',
-    ultraviolet: '#A78BFA',
-    nightBlack: '#0B0E12',
-    stardustWhite: '#F8F9FF',
-    graphite: '#1F2937',
-    softSlate: '#94A3B8',
-  },
-  fonts: {
-    heading: '"Orbitron", system-ui, sans-serif',
-    body: '"Montserrat", system-ui, sans-serif'
-  },
-  gradient: 'linear-gradient(90deg, #EC4899 0%, #F59E0B 28%, #06B6D4 50%, #3B82F6 74%, #8B5CF6 100%)',
-  glow: '0 0 4px rgba(139, 92, 246, 0.5)',
-  glowBlur: '10px'
-};
+import { JAZER_BRAND } from '../../theme/jazerNeonTheme';
 
 const escapeHTML = (str) => {
   if (typeof str !== 'string') return str;
@@ -76,7 +54,7 @@ const calculateTimeLeft = (targetDate, stopAtZero) => {
   return calculateUnits(diff, false);
 };
 
-export const CountdownWidget = ({ config }) => {
+export const CountdownWidget = ({ config, onCustomizeRequest }) => {
   const [timeLeft, setTimeLeft] = useState(() => 
     calculateTimeLeft(config.targetDate, config.stopAtZero)
   );
@@ -313,6 +291,7 @@ export const CountdownWidget = ({ config }) => {
             color: colors.digitColor,
             opacity: 0.8
           }}
+          onClick={() => onCustomizeRequest?.('event')}
         >
           Customize
         </button>

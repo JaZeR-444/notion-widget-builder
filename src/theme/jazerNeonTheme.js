@@ -60,6 +60,22 @@ const JAZER_LOGO_PATHS = {
   }
 };
 
+// Export JAZER_BRAND for direct use in widgets
+export const JAZER_BRAND = {
+  colors: JAZER_BRAND_COLORS,
+  ui: JAZER_UI_COLORS,
+  fonts: JAZER_FONTS,
+  fontFamily: JAZER_FONT_FAMILY,
+  sizes: JAZER_SIZES,
+  glowBlur: JAZER_EFFECTS.glowBlur,
+  glowBlurSubtle: JAZER_EFFECTS.glowBlurSubtle,
+  glow: JAZER_EFFECTS.glow,
+  glowStrong: JAZER_EFFECTS.glowStrong,
+  gradient: JAZER_GRADIENTS.gradient,
+  borderGradient: JAZER_GRADIENTS.borderGradient,
+  logo: JAZER_LOGO_PATHS,
+};
+
 export const jazerNeonTheme = {
   id: 'jazer-neon',
   name: 'JaZeR Neon',

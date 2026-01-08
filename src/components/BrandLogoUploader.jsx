@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { Upload, X, Loader, Check, Sparkles } from 'lucide-react';
 import ColorThief from 'colorthief';
 import { jazerNeonTheme } from '../theme/jazerNeonTheme'; // Import jazerNeonTheme
+import { normalizeBrandTheme } from '../utils/brandTheme';
 
 // Helper functions (could be moved to a utils file if shared)
 const rgbToHex = (r, g, b) => {
@@ -54,11 +55,15 @@ const BrandLogoUploader = ({ onColorsExtracted, onLogoUploaded }) => {
     };
 
     const generateThemeVariations = (baseExtractedTheme) => {
+        if (!baseExtractedTheme || !baseExtractedTheme.palette || baseExtractedTheme.palette.length === 0) {
+            return [];
+        }
+
         const sortedPalette = sortByLuminance(baseExtractedTheme.palette);
         const darkest = sortedPalette[0];
         const lightest = sortedPalette[sortedPalette.length - 1];
-        const primary = baseExtractedTheme.primary;
-        const secondary = baseExtractedTheme.secondary;
+        const primary = baseExtractedTheme.primary || darkest;
+        const secondary = baseExtractedTheme.secondary || sortedPalette[1] || darkest;
         const accent = baseExtractedTheme.accent;
 
         const variations = [];
@@ -80,7 +85,7 @@ const BrandLogoUploader = ({ onColorsExtracted, onLogoUploaded }) => {
             };
             // Dynamically determine isDark if not explicitly overridden
             mergedTheme.isDark = isDarkOverride !== null ? isDarkOverride : getLuminance(mergedTheme.colors.background) < 0.5;
-            return mergedTheme;
+            return normalizeBrandTheme(mergedTheme);
         };
 
         // Variation 1: Vibrant (similar to original primary theme)
@@ -133,6 +138,12 @@ const BrandLogoUploader = ({ onColorsExtracted, onLogoUploaded }) => {
             const dominantColor = colorThief.getColor(imgRef.current);
             const palette = colorThief.getPalette(imgRef.current, 8);
 
+            if (!dominantColor || !palette || palette.length === 0) {
+                setUploading(false);
+                setPreview(null);
+                return;
+            }
+
             const hexPalette = palette.map(rgb => rgbToHex(rgb[0], rgb[1], rgb[2]));
             const hexDominant = rgbToHex(dominantColor[0], dominantColor[1], dominantColor[2]);
 
@@ -153,17 +164,16 @@ const BrandLogoUploader = ({ onColorsExtracted, onLogoUploaded }) => {
                 }
             };
 
-            setExtractedTheme(baseTheme); // Store the base extracted theme
-            setGeneratedThemes(generateThemeVariations(baseTheme)); // Generate variations
+            const normalizedBaseTheme = normalizeBrandTheme(baseTheme);
+            setExtractedTheme(normalizedBaseTheme); // Store the base extracted theme
+            setGeneratedThemes(generateThemeVariations(normalizedBaseTheme)); // Generate variations
             setUploading(false);
 
-            onColorsExtracted && onColorsExtracted(baseTheme); // Notify parent with base theme
-        } catch (error) {
-            console.error('Color extraction failed:', error);
+            onColorsExtracted && onColorsExtracted(normalizedBaseTheme); // Notify parent with base theme
+        } catch {
+            // Silently fail and reset state
             setUploading(false);
-            // Optionally, clear preview if extraction fails consistently
             setPreview(null);
-            onLogoUploaded && onLogoUploaded(null);
         }
     };
 
@@ -249,7 +259,7 @@ const BrandLogoUploader = ({ onColorsExtracted, onLogoUploaded }) => {
                                         {generatedThemes.map(theme => (
                                             <button
                                                 key={theme.id}
-                                                onClick={() => onColorsExtracted && onColorsExtracted(theme)}
+                                                onClick={() => onColorsExtracted && onColorsExtracted(normalizeBrandTheme(theme))}
                                                 className="flex flex-col items-center p-2 rounded-lg border border-purple-500/30 hover:border-purple-500 transition-colors"
                                                 title={`Apply ${theme.name} Theme`}
                                             >

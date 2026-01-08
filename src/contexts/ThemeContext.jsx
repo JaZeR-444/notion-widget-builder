@@ -1,12 +1,16 @@
 // src/contexts/ThemeContext.jsx
-import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { jazerNeonTheme } from '../theme/jazerNeonTheme'; // Import the default theme
+import { ThemeContext } from './ThemeContextStore';
 
-const ThemeContext = createContext();
+const getPreferredDark = () => {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+};
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(jazerNeonTheme); // Default to JaZeR Neon
-  const [isDark, setIsDark] = useState(false); // Initialize to false, update in useEffect
+  const [isDark, setIsDark] = useState(() => getPreferredDark());
   const [activeBrandId, setActiveBrandId] = useState('jazer-neon'); // Track active brand kit
 
   // Listen for system dark mode changes
@@ -14,7 +18,6 @@ export const ThemeProvider = ({ children }) => {
     // Ensure window is defined before accessing matchMedia
     if (typeof window !== 'undefined') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      setIsDark(mediaQuery.matches);
       const handler = (e) => setIsDark(e.matches);
       mediaQuery.addEventListener('change', handler);
       return () => mediaQuery.removeEventListener('change', handler);
@@ -66,10 +69,3 @@ export const ThemeProvider = ({ children }) => {
   );
 };
 
-export const useTheme = () => {
-  const context = useContext(ThemeContext);
-  if (!context) {
-    throw new Error('useTheme must be used within a ThemeProvider');
-  }
-  return context;
-};

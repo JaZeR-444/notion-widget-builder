@@ -1,7 +1,7 @@
 // Copied from App.jsx to satisfy dependency without modifying App.jsx
 const escapeHTML = (str) => {
   if (typeof str !== 'string') return str;
-  return str.replace(/[&<>\'\""]/g, 
+  return str.replace(/[&<>'"]/g, 
     tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag]));
 };
 

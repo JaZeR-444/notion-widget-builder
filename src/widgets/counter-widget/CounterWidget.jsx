@@ -1,30 +1,28 @@
-import React, { useState, useEffect } from 'react';
-import { useTheme } from '../../contexts/ThemeContext';
+import React, { useState, useEffect, useMemo } from 'react';
+import { useTheme } from '../../hooks/useTheme';
 
-export const CounterWidget = ({ config }) => {
-  const { theme, getColor } = useTheme(); // Access global theme
+export const CounterWidget = ({ config, onCustomizeRequest }) => {
+  const { getColor } = useTheme(); // Access global theme
   const [count, setCount] = useState(config.resetValue || 0);
-  const [isDark, setIsDark] = useState(() => {
-    if (config.appearanceMode === 'dark') return true;
-    if (config.appearanceMode === 'light') return false;
-    if (config.appearanceMode === 'system') {
-      return window.matchMedia('(prefers-color-scheme: dark)').matches;
-    }
-    return false;
+  const [systemPrefersDark, setSystemPrefersDark] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
   });
 
   useEffect(() => {
-    if (config.appearanceMode === 'system') {
-      const mq = window.matchMedia('(prefers-color-scheme: dark)');
-      const handler = (e) => setIsDark(e.matches);
-      mq.addEventListener('change', handler);
-      return () => mq.removeEventListener('change', handler);
-    } else if (config.appearanceMode === 'dark') {
-      setIsDark(true);
-    } else {
-      setIsDark(false);
+    if (config.appearanceMode !== 'system' || typeof window === 'undefined') {
+      return undefined;
     }
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = (event) => setSystemPrefersDark(event.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
   }, [config.appearanceMode]);
+
+  const isDark = useMemo(() => {
+    if (config.appearanceMode === 'system') return systemPrefersDark;
+    return config.appearanceMode === 'dark';
+  }, [config.appearanceMode, systemPrefersDark]);
 
   const sizeMap = {
     small: { container: 'text-4xl p-4', button: 'text-2xl px-3 py-1', title: 'text-sm' },
@@ -61,7 +59,7 @@ export const CounterWidget = ({ config }) => {
         justifyContent: 'center',
         alignItems: config.centerText ? 'center' : 'flex-start'
       }}
-      className={size.container}
+      className={`${size.container} relative`}
     >
       <div className={`font-bold mb-4 ${size.title}`}>{config.counterTitle}</div>
       
@@ -118,6 +116,15 @@ export const CounterWidget = ({ config }) => {
           </button>
         )}
       </div>
+
+      {config.showCustomizeButton && (
+        <button
+          className="absolute bottom-4 right-4 px-4 py-2 rounded-lg text-xs font-semibold bg-purple-600 text-white shadow-lg hover:scale-105 transition-transform"
+          onClick={() => onCustomizeRequest?.('features')}
+        >
+          Customize
+        </button>
+      )}
     </div>
   );
 };
