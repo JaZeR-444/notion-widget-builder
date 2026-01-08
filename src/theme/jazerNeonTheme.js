@@ -54,9 +54,9 @@ const JAZER_LOGO_PATHS = {
   minWidthPrint: 30,
   clearSpace: '1em',
   paths: {
-    svg: '/images/JaZeR BrandKit_OnSite/Logo_Primary_Full-Color.svg',
-    gif: '/images/JaZeR_Logo_OFFICIAL.gif',
-    favicon: '/images/JaZeR BrandKit_OnSite/favicon.svg'
+    svg: '/logo.svg',
+    gif: '/logo.svg',
+    favicon: '/icon.svg'
   }
 };
 
@@ -78,7 +78,7 @@ export const JAZER_BRAND = {
 
 export const jazerNeonTheme = {
   id: 'jazer-neon',
-  name: 'JaZeR Neon',
+  name: 'Neon',
   colors: JAZER_BRAND_COLORS,
   ui: JAZER_UI_COLORS,
   fonts: JAZER_FONTS,

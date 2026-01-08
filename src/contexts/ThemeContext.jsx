@@ -9,7 +9,7 @@ const getPreferredDark = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(jazerNeonTheme); // Default to JaZeR Neon
+  const [theme, setTheme] = useState(jazerNeonTheme); // Default to Neon theme
   const [isDark, setIsDark] = useState(() => getPreferredDark());
   const [activeBrandId, setActiveBrandId] = useState('jazer-neon'); // Track active brand kit
 
@@ -30,7 +30,7 @@ export const ThemeProvider = ({ children }) => {
     setActiveBrandId(brandId);
   }, []);
 
-  // Helper function to reset to JaZeR Neon theme
+  // Helper function to reset to Neon theme
   const resetToJazerNeon = useCallback(() => {
     setTheme(jazerNeonTheme);
     setActiveBrandId('jazer-neon');
@@ -47,7 +47,7 @@ export const ThemeProvider = ({ children }) => {
       ...theme,
       isDark,
       activeBrandId,
-      // Helper to check if using JaZeR Neon theme
+      // Helper to check if using Neon theme
       isJazerNeon: activeBrandId === 'jazer-neon',
     };
   }, [theme, isDark, activeBrandId]);

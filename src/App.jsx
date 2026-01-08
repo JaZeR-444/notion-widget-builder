@@ -280,11 +280,11 @@ const JAZER_BRAND = {
   logo: {
     minWidth: 160, // px - digital minimum
     minWidthPrint: 30, // mm - print minimum
-    clearSpace: '1em', // Padding equal to height of "J"
+    clearSpace: '1em',
     paths: {
-      svg: '/images/JaZeR BrandKit_OnSite/Logo_Primary_Full-Color.svg',
-      gif: '/images/JaZeR_Logo_OFFICIAL.gif',
-      favicon: '/images/JaZeR BrandKit_OnSite/favicon.svg'
+      svg: '/logo.svg',
+      gif: '/logo.svg',
+      favicon: '/icon.svg'
     }
   }
 };
@@ -404,7 +404,7 @@ const BRAND_KITS = {
   },
   jazer: {
     id: 'jazer',
-    label: 'JaZeR Neon',
+    label: 'Neon',
     fontFamily: '"Montserrat", system-ui, sans-serif',
     headingFontFamily: '"Orbitron", system-ui, sans-serif',
     bgColor: JAZER_BRAND.colors.nightBlack,
@@ -482,7 +482,7 @@ const BRAND_KITS = {
 
 const BrandColorPalette = () => (
   <div className="p-4 bg-gray-900 rounded-lg mb-4">
-    <h4 className="text-xs uppercase tracking-wider text-gray-400 mb-3">JaZeR Brand Colors</h4>
+    <h4 className="text-xs uppercase tracking-wider text-gray-400 mb-3">Brand Colors</h4>
     <div className="grid grid-cols-5 gap-2">
       {Object.entries(JAZER_BRAND.colors).map(([name, color]) => (
         <div key={name} className="text-center">
@@ -1946,7 +1946,7 @@ function WidgetLandingPage({ onSelect, onBrandGenerator, setSearchInputRef }) {
         <section className="space-y-6 text-center">
           <div className="flex flex-wrap items-center justify-center gap-3">
             <span className="px-3 py-1 text-[11px] uppercase tracking-[0.3em] rounded-full border border-white/15 text-neutral-300">Final Widget List v1.2</span>
-            <span className="px-3 py-1 text-[11px] uppercase tracking-[0.3em] rounded-full border border-white/15 text-neutral-300">JaZeR Neon Ready</span>
+            <span className="px-3 py-1 text-[11px] uppercase tracking-[0.3em] rounded-full border border-white/15 text-neutral-300">Professional Grade</span>
           </div>
           <div className="inline-flex items-center justify-center p-3 rounded-full animate-pulse-neon mx-auto" style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', border: '1px solid var(--jazer-electric-purple)' }}>
             <Sparkles className="w-8 h-8" style={{ color: 'var(--jazer-electric-purple)' }} />
@@ -1955,7 +1955,7 @@ function WidgetLandingPage({ onSelect, onBrandGenerator, setSearchInputRef }) {
             Design-grade Notion Widgets
           </h1>
           <p className="text-lg md:text-xl max-w-3xl mx-auto leading-relaxed" style={{ color: 'var(--jazer-soft-slate)' }}>
-            Shuttle nine premium widgets—clock, weather, pomodoro, button generator, and more—directly into Notion. Every control respects the JaZeR neon system, responsive layouts, and your custom brand kit.
+            Shuttle nine premium widgets—clock, weather, pomodoro, button generator, and more—directly into Notion. Every control respects neon themes, responsive layouts, and your custom brand kit.
           </p>
           <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4">
             <button
@@ -2170,7 +2170,7 @@ function WidgetLandingPage({ onSelect, onBrandGenerator, setSearchInputRef }) {
         </section>
 
         <footer className="text-center pt-8 text-sm text-neutral-500">
-          <p>© {new Date().getFullYear()} JaZeR. Built for the Notion Wiz community.</p>
+          <p>© {new Date().getFullYear()} Notion Wiz. Built for the Notion community.</p>
         </footer>
       </div>
     </div>
@@ -2346,7 +2346,7 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
   }, [ActiveWidget]);
 
   useEffect(() => {
-    // Load JaZeR brand fonts: Orbitron (headings) and Montserrat (body)
+    // Load brand fonts: Orbitron (headings) and Montserrat (body)
     const link = document.createElement('link');
     link.href = 'https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;700&family=Orbitron:wght@400;700&family=Roboto&family=Open+Sans&display=swap';
     link.rel = 'stylesheet';
@@ -3359,7 +3359,7 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
                 <div className="flex items-center gap-2">
                   <select aria-label="Select brand kit" value={activeBrandId} onChange={(e) => handleBrandChange(e.target.value)} className="bg-[#0B0E12] border border-white/10 rounded-full text-xs text-white px-3 py-1.5">
                     <option value="none">None</option>
-                    <option value="jazer">JaZeR Neon</option>
+                    <option value="jazer">Neon</option>
                     {hasCustomBrandTheme && (
                       <option value="custom">{customBrandLabel}</option>
                     )}
@@ -3379,7 +3379,7 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
                 <div className="space-y-3">
                   {activeBrandId === 'jazer' && (
                     <div className="p-3 bg-purple-500/10 border border-purple-400/40 rounded-xl text-xs text-purple-100 space-y-1">
-                      <div className="font-semibold flex items-center gap-2"><Sparkles className="w-3 h-3" /> Official JaZeR Kit</div>
+                      <div className="font-semibold flex items-center gap-2"><Sparkles className="w-3 h-3" /> Official Neon Kit</div>
                       <p className="text-purple-200/80">Orbitron & Montserrat fonts, neon gradient accents, and night-mode canvas.</p>
                     </div>
                   )}

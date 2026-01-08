@@ -89,7 +89,7 @@ export function GlobalNavigation({
                 NW
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">JaZeR</p>
+                <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">Widget</p>
                 <p className="text-base font-semibold text-white">Notion Wiz</p>
               </div>
             </button>
@@ -190,7 +190,7 @@ export function GlobalNavigation({
                   }
                 `}>
                   {hasBrandTheme && <Sparkles className="w-3 h-3" />}
-                  <span className="hidden sm:inline">{hasBrandTheme ? brandLabel : 'JaZeR Neon'}</span>
+                  <span className="hidden sm:inline">{hasBrandTheme ? brandLabel : 'Neon'}</span>
                   <span className="sm:hidden">{hasBrandTheme ? '✓' : '–'}</span>
                 </span>
               </div>
