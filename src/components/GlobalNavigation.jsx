@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Menu, Sparkles, HelpCircle, Newspaper } from 'lucide-react';
+import { Menu, Sparkles, HelpCircle, Sun, Moon } from 'lucide-react';
 import { Breadcrumbs } from './Breadcrumbs';
+import { useTheme } from '../hooks/useTheme';
 
 // Note: WIDGET_REGISTRY will be passed down as props or accessed through other means
 // For now, we'll handle breadcrumbs without direct import to avoid circular dependency
@@ -24,6 +25,8 @@ export function GlobalNavigation({
   hasBrandTheme, 
   brandLabel 
 }) {
+  const { theme, toggleColorMode } = useTheme();
+  const isDarkMode = Boolean(theme?.isDark);
   const navItems = [
     { id: 'landing', label: 'Widgets', action: onNavigateHome },
     { id: 'builder', label: 'Builder', action: onNavigateBuilder, disabled: !selectedWidgetId },
@@ -75,7 +78,7 @@ export function GlobalNavigation({
   }, [currentView, selectedWidgetId, selectedWidgetLabel, onNavigateHome]);
 
   return (
-    <header className="w-full border-b border-subtle bg-[#0B0E12]/90 backdrop-blur-md sticky top-0 z-30 shadow-lg">
+    <header className={`w-full border-b backdrop-blur-md sticky top-0 z-30 shadow-lg ${isDarkMode ? 'border-subtle bg-[#0B0E12]/90 text-white' : 'border-sky-100 bg-white/80 text-slate-900'}`}>
       <div className="max-w-7xl mx-auto px-4 md:px-8 py-4">
         <div className="flex flex-col md:flex-row md:items-center gap-4">
           {/* Logo/Branding */}
@@ -101,7 +104,7 @@ export function GlobalNavigation({
               <button
                 type="button"
                 onClick={() => setShowNavMenu((prev) => !prev)}
-                className="md:hidden p-2 rounded-lg border border-interactive text-neutral-200 hover:border-purple-300 hover:text-white transition focus-ring"
+                className={`md:hidden p-2 rounded-lg border transition focus-ring ${isDarkMode ? 'border-interactive text-neutral-200 hover:border-purple-300 hover:text-white' : 'border-sky-200 text-slate-600 hover:border-sky-400 hover:text-sky-900'}`}
                 aria-label="Toggle navigation menu"
                 aria-expanded={showNavMenu}
               >
@@ -126,8 +129,8 @@ export function GlobalNavigation({
                       className={`
                         px-4 py-2 rounded-lg text-sm font-semibold transition-all focus-ring
                         ${isActive
-                          ? 'bg-purple-500/20 text-white border-2 border-purple-400 shadow-lg'
-                          : 'text-neutral-300 hover:text-white hover:bg-white/5 border-2 border-transparent'
+                          ? (isDarkMode ? 'bg-purple-500/20 text-white border-2 border-purple-400 shadow-lg' : 'bg-sky-100 text-sky-900 border-2 border-sky-300 shadow-sm')
+                          : (isDarkMode ? 'text-neutral-300 hover:text-white hover:bg-white/5 border-2 border-transparent' : 'text-slate-500 hover:text-sky-900 hover:bg-sky-50 border-2 border-transparent')
                         }
                         ${item.disabled ? 'opacity-40 cursor-not-allowed' : ''}
                       `}
@@ -142,7 +145,7 @@ export function GlobalNavigation({
               /* Mobile: Dropdown menu */
               <div className="relative" ref={navMenuRef}>
                 {showNavMenu && (
-                  <div className="absolute left-0 top-0 min-w-[200px] bg-[#0C0F16] border border-interactive rounded-xl shadow-2xl p-2 space-y-1 animate-fadeIn">
+                  <div className={`absolute left-0 top-0 min-w-[200px] border rounded-xl shadow-2xl p-2 space-y-1 animate-fadeIn ${isDarkMode ? 'bg-[#0C0F16] border-interactive' : 'bg-white border-sky-200'}`}>
                     {navItems.map(item => {
                       const isActive = currentView === item.id;
                       return (
@@ -157,8 +160,8 @@ export function GlobalNavigation({
                           className={`
                             w-full px-4 py-2.5 rounded-lg text-left text-sm font-medium transition
                             ${isActive
-                              ? 'bg-purple-500/20 border border-purple-400 text-white'
-                              : 'bg-white/5 border border-subtle text-neutral-200 hover:border-purple-300 hover:text-white'
+                              ? (isDarkMode ? 'bg-purple-500/20 border border-purple-400 text-white' : 'bg-sky-100 border border-sky-300 text-sky-900')
+                              : (isDarkMode ? 'bg-white/5 border border-subtle text-neutral-200 hover:border-purple-300 hover:text-white' : 'bg-white border border-sky-200 text-slate-600 hover:border-sky-400 hover:text-sky-900')
                             }
                             ${item.disabled ? 'opacity-40 cursor-not-allowed' : ''}
                           `}
@@ -183,12 +186,12 @@ export function GlobalNavigation({
             <div className="ml-auto flex items-center gap-3">
               {/* Brand status badge */}
               <div className="flex items-center gap-2 text-xs">
-                <span className="hidden sm:inline uppercase tracking-widest text-neutral-500">Brand</span>
+                <span className={`hidden sm:inline uppercase tracking-widest ${isDarkMode ? 'text-neutral-500' : 'text-slate-400'}`}>Brand</span>
                 <span className={`
                   px-3 py-1.5 rounded-full border text-xs font-semibold flex items-center gap-1.5
                   ${hasBrandTheme 
-                    ? 'border-emerald-400/50 bg-emerald-500/10 text-emerald-200' 
-                    : 'border-interactive bg-white/5 text-neutral-300'
+                    ? (isDarkMode ? 'border-emerald-400/50 bg-emerald-500/10 text-emerald-200' : 'border-emerald-300 bg-emerald-50 text-emerald-700') 
+                    : (isDarkMode ? 'border-interactive bg-white/5 text-neutral-300' : 'border-sky-200 bg-sky-50 text-slate-600')
                   }
                 `}>
                   {hasBrandTheme && <Sparkles className="w-3 h-3" />}
@@ -197,11 +200,23 @@ export function GlobalNavigation({
                 </span>
               </div>
 
+              {/* Theme toggle */}
+              <button
+                onClick={toggleColorMode}
+                role="switch"
+                aria-checked={isDarkMode}
+                aria-label={`Switch to ${isDarkMode ? 'light' : 'dark'} mode`}
+                title={isDarkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+                className={`w-11 h-11 rounded-lg border transition focus-ring flex items-center justify-center cursor-pointer ${isDarkMode ? 'border-interactive text-neutral-300 hover:border-white/40 hover:text-white' : 'border-sky-200 text-slate-600 hover:border-sky-400 hover:text-sky-900'}`}
+              >
+                {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              </button>
+
               {/* Help button */}
               {onOpenHelp && (
                 <button
                   onClick={onOpenHelp}
-                  className="p-2 rounded-lg border border-interactive text-neutral-300 hover:border-purple-300 hover:text-white transition focus-ring"
+                  className={`p-2 rounded-lg border transition focus-ring ${isDarkMode ? 'border-interactive text-neutral-300 hover:border-purple-300 hover:text-white' : 'border-sky-200 text-slate-600 hover:border-sky-400 hover:text-sky-900'}`}
                   aria-label="Open help and shortcuts"
                   title="Keyboard shortcuts"
                 >
@@ -214,7 +229,7 @@ export function GlobalNavigation({
 
         {/* Mobile breadcrumbs - shown below main nav */}
         {!isDesktop && breadcrumbs.length > 1 && (
-          <div className="mt-3 pt-3 border-t border-subtle">
+          <div className={`mt-3 pt-3 border-t ${isDarkMode ? 'border-subtle' : 'border-sky-100'}`}>
             <Breadcrumbs items={breadcrumbs} />
           </div>
         )}

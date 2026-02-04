@@ -1,5 +1,6 @@
 import React from 'react';
 import { ChevronRight, Home } from 'lucide-react';
+import { useTheme } from '../hooks/useTheme';
 
 /**
  * Breadcrumb navigation component
@@ -10,6 +11,8 @@ import { ChevronRight, Home } from 'lucide-react';
  */
 export function Breadcrumbs({ items = [], className = '' }) {
   if (items.length === 0) return null;
+  const { theme } = useTheme();
+  const isDarkMode = Boolean(theme?.isDark);
 
   return (
     <nav 
@@ -25,14 +28,14 @@ export function Breadcrumbs({ items = [], className = '' }) {
             <li key={index} className="flex items-center gap-2">
               {index > 0 && (
                 <ChevronRight 
-                  className="w-4 h-4 text-neutral-500" 
+                  className={`w-4 h-4 ${isDarkMode ? 'text-neutral-500' : 'text-slate-400'}`} 
                   aria-hidden="true" 
                 />
               )}
               
               {isLast ? (
                 <span 
-                  className="text-white font-medium flex items-center gap-1.5"
+                  className={`font-medium flex items-center gap-1.5 ${isDarkMode ? 'text-white' : 'text-slate-900'}`}
                   aria-current="page"
                 >
                   {isHome && <Home className="w-4 h-4" />}
@@ -41,7 +44,7 @@ export function Breadcrumbs({ items = [], className = '' }) {
               ) : (
                 <button
                   onClick={item.onClick}
-                  className="text-neutral-400 hover:text-white transition-colors flex items-center gap-1.5 focus-ring rounded px-1 -mx-1"
+                  className={`transition-colors flex items-center gap-1.5 focus-ring rounded px-1 -mx-1 ${isDarkMode ? 'text-neutral-400 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}
                   type="button"
                 >
                   {isHome && <Home className="w-4 h-4" />}

@@ -54,6 +54,7 @@ import BrandThemeGenerator from './components/BrandThemeGenerator';
 import { UpgradeOrbRadial } from './components/UpgradeOrbRadial';
 import { normalizeBrandTheme } from './utils/brandTheme';
 import { useRecentWidgets, formatRelativeTime } from './hooks/useRecentWidgets';
+import { useTheme } from './hooks/useTheme';
 
 // --- CONSTANTS & CONFIG ---
 
@@ -1672,6 +1673,8 @@ const ResizablePreviewPanel = ({
   onCustomizeRequest,
   upgradeItems
 }) => {
+  const { theme } = useTheme();
+  const isDarkMode = Boolean(theme?.isDark);
   const [previewWidth, setPreviewWidth] = useState(800);
   const [previewHeight, setPreviewHeight] = useState(450);
   const [isResizing, setIsResizing] = useState(false);
@@ -1728,11 +1731,12 @@ const ResizablePreviewPanel = ({
   return (
     <div 
       ref={previewContainerRef}
-      className="flex-1 flex flex-col relative h-full" 
-      style={{ backgroundColor: 'var(--jazer-night-black)' }}
+      className={`flex-1 flex flex-col relative h-full ${isDarkMode ? 'bg-[#0B0E12]' : 'bg-slate-100'}`}
     >
       <div className="flex-1 flex items-center justify-center p-8" style={{
-        background: activeBrandId === 'jazer' ? `radial-gradient(circle at 50% 10%, ${JAZER_BRAND.ui.nebulaPurple} 0%, ${JAZER_BRAND.colors.nightBlack} 100%)` : '#f5f5f5',
+        background: activeBrandId === 'jazer'
+          ? `radial-gradient(circle at 50% 10%, ${JAZER_BRAND.ui.nebulaPurple} 0%, ${JAZER_BRAND.colors.nightBlack} 100%)`
+          : (isDarkMode ? '#0F172A' : '#F1F5F9'),
         boxShadow: activeBrandId === 'jazer' ? JAZER_BRAND.glow : 'none'
       }}>
         <div
@@ -1756,7 +1760,11 @@ const ResizablePreviewPanel = ({
                   key={preset.id}
                   type="button"
                   onClick={() => applyPresetSize(preset)}
-                  className={`px-3 py-1 rounded-full text-[11px] uppercase tracking-[0.3em] border transition ${isActive ? 'border-white text-white bg-white/20' : 'border-white/20 text-white/70 bg-black/30 hover:border-white/40 hover:text-white'}`}
+                  className={`px-3 py-1 rounded-full text-[11px] uppercase tracking-[0.3em] border transition ${
+                    isActive
+                      ? (isDarkMode ? 'border-white text-white bg-white/20' : 'border-slate-300 text-slate-900 bg-white')
+                      : (isDarkMode ? 'border-white/20 text-white/70 bg-black/30 hover:border-white/40 hover:text-white' : 'border-slate-200 text-slate-600 bg-white/70 hover:border-slate-300 hover:text-slate-900')
+                  }`}
                 >
                   {preset.label}
                 </button>
@@ -1851,6 +1859,10 @@ export { WIDGET_REGISTRY };
 function WidgetLandingPage({ onSelect, onBrandGenerator, setSearchInputRef }) {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
+  const [scrollProgress, setScrollProgress] = useState(0);
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+  const { theme } = useTheme();
+  const isDarkMode = Boolean(theme?.isDark);
   const searchInputLocalRef = useRef(null);
 
   // Set search input ref for parent keyboard shortcuts
@@ -1859,6 +1871,59 @@ function WidgetLandingPage({ onSelect, onBrandGenerator, setSearchInputRef }) {
       setSearchInputRef(searchInputLocalRef.current);
     }
   }, [setSearchInputRef]);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') return undefined;
+    const linkId = 'plus-jakarta-sans-font';
+    const existing = document.getElementById(linkId);
+    if (existing) return undefined;
+    const link = document.createElement('link');
+    link.id = linkId;
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap';
+    document.head.appendChild(link);
+    return () => {
+      if (link.parentNode) {
+        link.parentNode.removeChild(link);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const media = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const handleChange = () => setPrefersReducedMotion(media.matches);
+    handleChange();
+    if (media.addEventListener) {
+      media.addEventListener('change', handleChange);
+    } else {
+      media.addListener(handleChange);
+    }
+    return () => {
+      if (media.removeEventListener) {
+        media.removeEventListener('change', handleChange);
+      } else {
+        media.removeListener(handleChange);
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const handleScroll = () => {
+      const doc = document.documentElement;
+      const height = doc.scrollHeight - window.innerHeight;
+      const progress = height > 0 ? Math.min(window.scrollY / height, 1) : 0;
+      setScrollProgress(progress);
+    };
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, []);
 
   const widgetList = useMemo(() => (
     Object.values(WIDGET_REGISTRY).map(widget => ({
@@ -1906,21 +1971,50 @@ function WidgetLandingPage({ onSelect, onBrandGenerator, setSearchInputRef }) {
     { label: 'Brand Kits', value: '∞', subLabel: 'Generator-powered' }
   ];
 
+  const ratingStars = Array.from({ length: 5 }, (_, index) => index);
+
   const howItWorks = [
     {
-      icon: <Layout className="w-5 h-5 text-purple-300" />,
+      icon: <Layout className="w-5 h-5 text-sky-600" />,
       title: 'Choose a widget',
       copy: 'Clock, Weather, Buttons, and more with presets tuned to Notion.'
     },
     {
-      icon: <Palette className="w-5 h-5 text-cyan-300" />,
+      icon: <Palette className="w-5 h-5 text-orange-500" />,
       title: 'Apply your brand',
       copy: 'Upload a logo once and sync its palette across every widget.'
     },
     {
-      icon: <Download className="w-5 h-5 text-pink-300" />,
+      icon: <Download className="w-5 h-5 text-emerald-500" />,
       title: 'Export / embed',
       copy: 'Copy the embed link or HTML snippet directly into Notion.'
+    }
+  ];
+
+  const storyChapters = [
+    {
+      kicker: 'Chapter 1',
+      title: 'Stop rebuilding widgets from scratch',
+      copy: 'Notion pages look polished until widgets drift off-brand. Keep every block consistent without manual CSS or one-off embeds.',
+      icon: <AlertTriangle className="w-5 h-5" />,
+      cta: 'See the widget library',
+      action: () => onSelect('clock')
+    },
+    {
+      kicker: 'Chapter 2',
+      title: 'Sync one brand kit across every build',
+      copy: 'Upload a logo once, capture its palette, and apply it to every widget. Your brand system is always one click away.',
+      icon: <Sparkles className="w-5 h-5" />,
+      cta: 'Launch brand kit',
+      action: onBrandGenerator
+    },
+    {
+      kicker: 'Chapter 3',
+      title: 'Publish widgets that stay on-brand',
+      copy: 'Export a clean embed link or HTML snippet. Updates carry across Notion without redoing the design.',
+      icon: <Rocket className="w-5 h-5" />,
+      cta: 'Preview a widget',
+      action: () => onSelect('newButtonGenerator')
     }
   ];
 
@@ -1939,48 +2033,190 @@ function WidgetLandingPage({ onSelect, onBrandGenerator, setSearchInputRef }) {
     }
   ];
 
+  const ui = useMemo(() => ({
+    page: isDarkMode
+      ? 'bg-[#0B0E12] text-slate-100'
+      : 'bg-gradient-to-b from-sky-50 via-white to-slate-50 text-sky-950',
+    track: isDarkMode ? 'bg-white/10' : 'bg-sky-100/80',
+    trackFill: isDarkMode ? 'bg-orange-400' : 'bg-orange-500',
+    card: isDarkMode
+      ? 'bg-[#0F172A] border-white/10 shadow-[0_20px_60px_-30px_rgba(0,0,0,0.65)]'
+      : 'bg-white border-sky-100 shadow-sm',
+    cardSoft: isDarkMode ? 'bg-[#111827] border-white/10' : 'bg-sky-50 border-sky-100',
+    kicker: isDarkMode ? 'text-sky-300' : 'text-sky-500',
+    textPrimary: isDarkMode ? 'text-slate-100' : 'text-sky-950',
+    textSecondary: isDarkMode ? 'text-slate-300' : 'text-slate-600',
+    textMuted: isDarkMode ? 'text-slate-400' : 'text-slate-500',
+    pill: isDarkMode ? 'border-white/15 bg-white/10 text-sky-200' : 'border-sky-200 bg-sky-100 text-sky-700',
+    pillAlt: isDarkMode ? 'border-white/15 bg-[#0F172A] text-sky-200' : 'border-sky-200 bg-white text-sky-700',
+    outlineButton: isDarkMode ? 'border-white/30 text-white hover:border-white/60' : 'border-sky-300 text-sky-900 hover:border-sky-500 hover:text-sky-950',
+    ghostButton: isDarkMode ? 'border-white/15 text-slate-200 hover:border-white/30 hover:text-white' : 'border-sky-200 text-sky-700 hover:border-sky-400 hover:text-sky-900',
+    input: isDarkMode ? 'bg-[#0F172A] border-white/10 text-slate-200 placeholder:text-slate-500' : 'bg-white border-sky-200 text-slate-700 placeholder:text-slate-400',
+  }), [isDarkMode]);
+
   return (
-    <div className="min-h-screen px-4 sm:px-6 lg:px-16 py-8 flex flex-col items-center" style={{ backgroundColor: 'var(--jazer-night-black)', color: 'var(--jazer-stardust-white)' }}>
-      <div className="w-full max-w-6xl space-y-14">
+    <div
+      className={`min-h-screen px-4 sm:px-6 lg:px-8 py-10 flex flex-col items-center ${ui.page}`}
+      style={{ fontFamily: '"Plus Jakarta Sans", system-ui, sans-serif' }}
+    >
+      <div aria-hidden="true" className={`fixed top-0 left-0 right-0 z-40 h-1 ${ui.track}`}>
+        <div
+          className={`h-full ${ui.trackFill}`}
+          style={{
+            width: `${Math.round(scrollProgress * 100)}%`,
+            transition: prefersReducedMotion ? 'none' : 'width 200ms ease'
+          }}
+        />
+      </div>
+      <div className="w-full max-w-6xl space-y-16">
         {/* Hero */}
-        <section className="space-y-6 text-center">
-          <div className="flex flex-wrap items-center justify-center gap-3">
-            <span className="px-3 py-1 text-[11px] uppercase tracking-[0.3em] rounded-full border border-white/15 text-neutral-300">Final Widget List v1.2</span>
-            <span className="px-3 py-1 text-[11px] uppercase tracking-[0.3em] rounded-full border border-white/15 text-neutral-300">Professional Grade</span>
+        <section className="grid lg:grid-cols-[1.1fr,0.9fr] gap-10 items-center">
+          <div className="space-y-6">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className={`px-3 py-1 text-[11px] uppercase tracking-[0.3em] rounded-full border ${ui.pill}`}>
+                Final Widget List v1.2
+              </span>
+              <span className={`px-3 py-1 text-[11px] uppercase tracking-[0.3em] rounded-full border ${ui.pillAlt}`}>
+                Professional Grade
+              </span>
+            </div>
+            <div className="flex items-center gap-4">
+              <img
+                src="Notion Widget Builder Icon (100 x 100 px).png"
+                alt="Notion Widget Builder"
+                className={`h-16 w-16 rounded-2xl border ${isDarkMode ? 'border-white/10 bg-white/5' : 'border-sky-100 bg-white'} shadow-sm`}
+              />
+              <div>
+                <p className={`text-[11px] uppercase tracking-[0.3em] ${ui.kicker}`}>Notion Widget Builder</p>
+                <p className={`text-sm ${ui.textSecondary}`}>Design-grade widgets, synced to your brand.</p>
+              </div>
+            </div>
+            <h1 className={`text-4xl md:text-6xl font-extrabold leading-tight ${ui.textPrimary}`}>
+              Design-grade Notion widgets, ready to ship.
+            </h1>
+            <p className={`text-lg md:text-xl max-w-xl leading-relaxed ${ui.textSecondary}`}>
+              Shuttle nine premium widgets—clock, weather, pomodoro, button generator, and more—directly into Notion. Every control respects responsive layouts and your custom brand kit.
+            </p>
+            <div className="flex flex-col sm:flex-row flex-wrap gap-3">
+              <button
+                onClick={() => onSelect('clock')}
+                className="px-8 py-3 rounded-full text-sm font-semibold tracking-[0.2em] uppercase bg-orange-500 text-white hover:bg-orange-600 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 w-full sm:w-auto text-center cursor-pointer"
+              >
+                Start Building
+              </button>
+              <button
+                onClick={onBrandGenerator}
+                className={`px-8 py-3 rounded-full text-sm font-semibold tracking-[0.2em] uppercase border transition-colors flex items-center gap-2 justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 w-full sm:w-auto cursor-pointer ${ui.outlineButton}`}
+              >
+                <Palette className="w-4 h-4" /> Sync Brand Kit
+              </button>
+            </div>
+            <div className={`flex flex-wrap items-center gap-4 text-sm ${ui.textSecondary}`}>
+              <div className="flex items-center gap-1 text-orange-500">
+                {ratingStars.map((index) => (
+                  <Star key={index} className="w-4 h-4 text-orange-400" fill="currentColor" aria-hidden="true" />
+                ))}
+              </div>
+              <span>Trusted by early Notion builders and creators.</span>
+            </div>
           </div>
-          <div className="flex items-center justify-center">
-            <img 
-              src="Notion Widget Builder Icon (100 x 100 px).png" 
-              alt="Notion Widget Builder" 
-              className="h-24 md:h-32 w-auto"
-            />
+          <div className="relative">
+            <div className={`absolute -top-8 -right-8 h-28 w-28 rounded-full ${isDarkMode ? 'bg-sky-900/40' : 'bg-sky-100'}`} aria-hidden="true" />
+            <div className={`relative rounded-3xl border p-6 space-y-4 ${ui.card}`}>
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className={`text-[11px] uppercase tracking-[0.3em] ${ui.kicker}`}>Live preview</p>
+                  <h3 className={`text-lg font-semibold ${ui.textPrimary}`}>Widget stack</h3>
+                </div>
+                <span className={`px-3 py-1 text-[11px] uppercase tracking-[0.25em] rounded-full ${ui.pill}`}>
+                  Auto-sync
+                </span>
+              </div>
+              <div className="grid gap-3">
+                <div className={`rounded-2xl border p-4 flex items-center justify-between ${ui.cardSoft}`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl border shadow-sm flex items-center justify-center ${isDarkMode ? 'bg-[#0B1320] border-white/10 text-sky-200' : 'bg-white border-sky-100 text-sky-600'}`}>
+                      <Clock className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className={`text-sm font-semibold ${ui.textPrimary}`}>Focus Clock</p>
+                      <p className={`text-xs ${ui.textMuted}`}>Auto-resize + neon mode</p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-semibold text-orange-500">Live</span>
+                </div>
+                <div className={`rounded-2xl border p-4 flex items-center justify-between ${ui.cardSoft}`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl border shadow-sm flex items-center justify-center ${isDarkMode ? 'bg-[#0B1320] border-white/10 text-sky-200' : 'bg-white border-sky-100 text-sky-600'}`}>
+                      <CloudSun className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className={`text-sm font-semibold ${ui.textPrimary}`}>Weather Pulse</p>
+                      <p className={`text-xs ${ui.textMuted}`}>Live API integration</p>
+                    </div>
+                  </div>
+                  <span className="text-xs font-semibold text-emerald-500">Active</span>
+                </div>
+                <div className={`rounded-2xl border p-4 flex items-center justify-between ${ui.cardSoft}`}>
+                  <div className="flex items-center gap-3">
+                    <div className={`w-10 h-10 rounded-xl border shadow-sm flex items-center justify-center ${isDarkMode ? 'bg-[#0B1320] border-white/10 text-sky-200' : 'bg-white border-sky-100 text-sky-600'}`}>
+                      <MousePointer className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <p className={`text-sm font-semibold ${ui.textPrimary}`}>Button Builder</p>
+                      <p className={`text-xs ${ui.textMuted}`}>Macro + toggle workflows</p>
+                    </div>
+                  </div>
+                  <span className={`text-xs font-semibold ${isDarkMode ? 'text-sky-200' : 'text-sky-600'}`}>Pro</span>
+                </div>
+              </div>
+              <div className={`rounded-2xl border border-dashed p-4 text-xs ${ui.textMuted} ${isDarkMode ? 'border-white/20 bg-[#0B1320]' : 'border-sky-200 bg-white'}`}>
+                <div className="flex items-center gap-2">
+                  <Sparkles className={`w-4 h-4 ${isDarkMode ? 'text-sky-300' : 'text-sky-500'}`} />
+                  Brand kits auto-apply to every widget in the stack.
+                </div>
+              </div>
+            </div>
           </div>
-          <h1 className="text-4xl md:text-6xl font-black tracking-tight gradient-text neon-text" style={{ fontFamily: 'Orbitron, sans-serif' }}>
-            Design-grade Notion Widgets
-          </h1>
-          <p className="text-lg md:text-xl max-w-3xl mx-auto leading-relaxed" style={{ color: 'var(--jazer-soft-slate)' }}>
-            Shuttle nine premium widgets—clock, weather, pomodoro, button generator, and more—directly into Notion. Every control respects neon themes, responsive layouts, and your custom brand kit.
-          </p>
-          <div className="flex flex-col sm:flex-row flex-wrap items-center justify-center gap-4">
-            <button
-              onClick={() => onSelect('clock')}
-              className="px-8 py-3 rounded-full text-sm font-bold tracking-[0.2em] uppercase bg-gradient-to-r from-purple-500 to-pink-500 hover:scale-105 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-300 w-full sm:w-auto text-center"
-            >
-              Start Building
-            </button>
-            <button
-              onClick={onBrandGenerator}
-              className="px-8 py-3 rounded-full text-sm font-bold tracking-[0.2em] uppercase border border-white/20 text-neutral-200 hover:border-cyan-400 hover:text-white transition flex items-center gap-2 justify-center focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300 w-full sm:w-auto"
-            >
-              <Palette className="w-4 h-4" /> Sync Brand Kit
-            </button>
+        </section>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {heroStats.map((stat) => (
+            <div key={stat.label} className={`p-4 rounded-2xl border ${ui.card}`}>
+              <div className={`text-3xl font-bold ${ui.textPrimary}`}>{stat.value}</div>
+              <div className={`text-[11px] uppercase tracking-[0.3em] mt-1 ${ui.kicker}`}>{stat.label}</div>
+              <p className={`text-xs mt-2 ${ui.textSecondary}`}>{stat.subLabel}</p>
+            </div>
+          ))}
+        </div>
+
+        {/* Story chapters */}
+        <section className="space-y-6">
+          <div className="space-y-2">
+            <p className={`text-[11px] uppercase tracking-[0.3em] ${ui.kicker}`}>Story</p>
+            <h2 className={`text-2xl md:text-3xl font-bold ${ui.textPrimary}`}>From friction to launch in three chapters</h2>
+            <p className={`text-sm max-w-2xl ${ui.textSecondary}`}>
+              A simple workflow that replaces manual embeds with a consistent, professional widget system.
+            </p>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            {heroStats.map((stat) => (
-              <div key={stat.label} className="p-4 rounded-xl border border-white/10 bg-white/5">
-                <div className="text-3xl font-black">{stat.value}</div>
-                <div className="text-xs uppercase tracking-[0.3em] text-neutral-400 mt-1">{stat.label}</div>
-                <p className="text-[11px] text-neutral-400 mt-1">{stat.subLabel}</p>
+          <div className="grid md:grid-cols-3 gap-4">
+            {storyChapters.map((step) => (
+              <div key={step.title} className={`rounded-2xl border p-5 space-y-3 ${ui.card}`}>
+                <div className="flex items-center justify-between">
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center ${isDarkMode ? 'bg-sky-900/50 text-sky-200' : 'bg-sky-100 text-sky-600'}`}>
+                    {step.icon}
+                  </div>
+                  <span className={`text-[11px] uppercase tracking-[0.3em] ${ui.kicker}`}>{step.kicker}</span>
+                </div>
+                <h3 className={`text-lg font-semibold ${ui.textPrimary}`}>{step.title}</h3>
+                <p className={`text-sm ${ui.textSecondary}`}>{step.copy}</p>
+                <button
+                  onClick={step.action}
+                  className={`text-xs font-semibold transition-colors inline-flex items-center gap-2 cursor-pointer ${isDarkMode ? 'text-sky-200 hover:text-white' : 'text-sky-700 hover:text-sky-950'}`}
+                >
+                  {step.cta}
+                  <ArrowLeft className="w-4 h-4 rotate-180" />
+                </button>
               </div>
             ))}
           </div>
@@ -1990,34 +2226,34 @@ function WidgetLandingPage({ onSelect, onBrandGenerator, setSearchInputRef }) {
         <section className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-400">Spotlight</p>
-              <h2 className="text-2xl font-bold">Featured widgets</h2>
+              <p className={`text-[11px] uppercase tracking-[0.3em] ${ui.kicker}`}>Spotlight</p>
+              <h2 className={`text-2xl font-bold ${ui.textPrimary}`}>Featured widgets</h2>
             </div>
             <button
               onClick={() => onSelect('weather')}
-              className="px-4 py-2 rounded-full border border-white/15 text-sm text-neutral-200 hover:border-purple-300 hover:text-white transition flex items-center gap-2 self-start sm:self-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400"
+              className={`px-4 py-2 rounded-full border text-sm transition-colors flex items-center gap-2 self-start sm:self-auto focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 cursor-pointer ${ui.ghostButton}`}
             >
               Explore builder <ArrowLeft className="w-4 h-4 rotate-180" />
             </button>
           </div>
-          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6 md:overflow-visible">
+          <div className="flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-2 px-2 md:mx-0 md:px-0 md:grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 md:gap-6 md:overflow-visible">
             {featuredWidgets.map(widget => (
-              <div key={widget.id} className="rounded-2xl p-6 border border-white/10 bg-gradient-to-br from-white/10 to-transparent backdrop-blur min-w-[260px] snap-center md:min-w-0">
+              <div key={widget.id} className={`rounded-2xl p-6 border min-w-[260px] snap-center md:min-w-0 ${ui.card}`}>
                 <div className="flex items-center justify-between mb-4">
-                  <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-white/10 text-purple-200">
+                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center border ${isDarkMode ? 'bg-[#0B1320] border-white/10 text-sky-200' : 'bg-sky-50 border-sky-100 text-sky-600'}`}>
                     {widget.icon}
                   </div>
                   {widgetBadges[widget.id] && (
-                    <span className="px-3 py-1 rounded-full text-[11px] uppercase tracking-widest bg-purple-500/20 border border-purple-400 text-purple-200">
+                    <span className={`px-3 py-1 rounded-full text-[11px] uppercase tracking-widest border ${ui.pill}`}>
                       {widgetBadges[widget.id]}
                     </span>
                   )}
                 </div>
-                <h3 className="text-xl font-semibold mb-2">{widget.label}</h3>
-                <p className="text-sm text-neutral-300 mb-6">{widget.description || `Create a beautiful ${widget.label.toLowerCase()} widget for your Notion pages.`}</p>
+                <h3 className={`text-xl font-semibold mb-2 ${ui.textPrimary}`}>{widget.label}</h3>
+                <p className={`text-sm mb-6 ${ui.textSecondary}`}>{widget.description || `Create a beautiful ${widget.label.toLowerCase()} widget for your Notion pages.`}</p>
                 <button
                   onClick={() => onSelect(widget.id)}
-                  className="w-full py-2 rounded-lg border border-white/15 text-sm font-semibold text-white hover:border-purple-400 transition"
+                  className={`w-full py-2 rounded-lg border text-sm font-semibold transition-colors cursor-pointer ${ui.ghostButton}`}
                 >
                   Customize {widget.label}
                 </button>
@@ -2040,7 +2276,11 @@ function WidgetLandingPage({ onSelect, onBrandGenerator, setSearchInputRef }) {
                   key={category}
                   type="button"
                   onClick={() => setSelectedCategory(category)}
-                  className={`px-3 py-1.5 rounded-full text-[11px] uppercase tracking-widest border transition ${selectedCategory === category ? 'border-purple-400 text-white bg-purple-500/20' : 'border-white/15 text-neutral-300 hover:border-purple-300 hover:text-white'} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400`}
+                  className={`px-4 py-2 min-h-[44px] rounded-full text-[11px] uppercase tracking-widest border transition-colors cursor-pointer ${
+                    selectedCategory === category
+                      ? (isDarkMode ? 'border-sky-400 text-sky-100 bg-sky-900/40' : 'border-sky-400 text-sky-950 bg-sky-100')
+                      : (isDarkMode ? 'border-white/10 text-slate-300 bg-[#0F172A] hover:border-white/30 hover:text-white' : 'border-sky-200 text-sky-700 bg-white hover:border-sky-400 hover:text-sky-950')
+                  } focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400`}
                   aria-pressed={selectedCategory === category}
                   role="tab"
                 >
@@ -2049,14 +2289,14 @@ function WidgetLandingPage({ onSelect, onBrandGenerator, setSearchInputRef }) {
               ))}
             </div>
             <div className="relative ml-auto">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+              <Search className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 ${isDarkMode ? 'text-slate-500' : 'text-slate-400'}`} />
               <input
                 ref={searchInputLocalRef}
                 type="text"
                 value={searchQuery}
                 onChange={(event) => setSearchQuery(event.target.value)}
                 placeholder="Search widgets..."
-                className="pl-9 pr-3 py-2 rounded-full bg-white/5 border border-interactive text-sm text-white placeholder:text-neutral-500 focus-ring"
+                className={`pl-9 pr-4 h-11 rounded-full border text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 shadow-sm ${ui.input}`}
                 aria-label="Search widgets"
               />
             </div>
@@ -2064,20 +2304,20 @@ function WidgetLandingPage({ onSelect, onBrandGenerator, setSearchInputRef }) {
 
           <div className="py-2 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {filteredWidgets.map(widget => (
-              <div key={widget.id} className="rounded-2xl border border-white/10 bg-white/5 p-5 flex flex-col">
+              <div key={widget.id} className={`rounded-2xl border p-5 flex flex-col ${ui.card}`}>
                 <div className="flex items-center gap-3 mb-3">
-                  <div className="w-10 h-10 rounded-lg bg-white/10 flex items-center justify-center text-purple-200">
+                  <div className={`w-10 h-10 rounded-lg border flex items-center justify-center ${isDarkMode ? 'bg-[#0B1320] border-white/10 text-sky-200' : 'bg-sky-50 border-sky-100 text-sky-600'}`}>
                     {widget.icon}
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold">{widget.label}</h3>
-                    <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-400">{widget.category}</p>
+                    <h3 className={`text-lg font-semibold ${ui.textPrimary}`}>{widget.label}</h3>
+                    <p className={`text-[11px] uppercase tracking-[0.3em] ${ui.kicker}`}>{widget.category}</p>
                   </div>
                 </div>
-                <p className="text-sm text-neutral-300 flex-1">{widget.description || `Create a ${widget.label.toLowerCase()} widget.`}</p>
+                <p className={`text-sm flex-1 ${ui.textSecondary}`}>{widget.description || `Create a ${widget.label.toLowerCase()} widget.`}</p>
                 <button
                   onClick={() => onSelect(widget.id)}
-                  className="mt-4 w-full py-2 rounded-lg bg-purple-500/20 border border-purple-400 text-sm font-semibold text-purple-50 hover:bg-purple-500/30 transition"
+                  className={`mt-4 w-full py-2 rounded-lg border text-sm font-semibold transition-colors cursor-pointer ${isDarkMode ? 'bg-sky-900/40 border-sky-600 text-sky-100 hover:bg-sky-800/60' : 'bg-sky-100 border-sky-300 text-sky-900 hover:bg-sky-200'}`}
                 >
                   Build {widget.label}
                 </button>
@@ -2087,36 +2327,37 @@ function WidgetLandingPage({ onSelect, onBrandGenerator, setSearchInputRef }) {
         </section>
 
         {/* Brand kit call to action */}
-        <section className="p-1 rounded-2xl bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400">
-          <div className="rounded-2xl bg-[#0F111C] p-6 sm:p-8 flex flex-col lg:flex-row gap-8 items-start w-full">
+        <section className={`relative overflow-hidden rounded-3xl border text-white ${isDarkMode ? 'border-white/10 bg-[#0A1220]' : 'border-sky-100 bg-sky-900'}`}>
+          <div className={`absolute -top-24 -right-10 h-48 w-48 rounded-full ${isDarkMode ? 'bg-sky-900/60' : 'bg-sky-700/40'}`} aria-hidden="true" />
+          <div className="relative p-6 sm:p-8 lg:p-10 flex flex-col lg:flex-row gap-8 items-start w-full">
             <div className="flex-1 space-y-4 w-full">
               <div className="flex items-center gap-3">
-                <div className="p-3 rounded-full bg-purple-500/20 border border-purple-300/40">
-                  <Sparkles className="w-6 h-6 text-purple-200" />
+                <div className="p-3 rounded-full bg-white/10 border border-white/20">
+                  <Sparkles className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-400">Brand Kit</p>
-                  <h3 className="text-2xl font-bold">Generate once, sync everywhere</h3>
+                  <p className="text-[11px] uppercase tracking-[0.3em] text-sky-200">Brand Kit</p>
+                  <h3 className="text-2xl font-bold text-white">Generate once, sync everywhere</h3>
                 </div>
               </div>
-              <p className="text-sm text-neutral-200 max-w-2xl">
+              <p className="text-sm text-sky-100 max-w-4xl">
                 Upload a logo, capture its palette, and notch it into every widget automatically. The generator writes to local storage so your theme loads every time you reopen the builder.
               </p>
-              <div className="grid sm:grid-cols-2 gap-3 text-sm text-neutral-200">
+              <div className="grid sm:grid-cols-2 gap-3 text-sm text-sky-100">
                 <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-400" />
+                  <Check className="w-4 h-4 text-emerald-300" />
                   8+ curated presets per brand
                 </div>
                 <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-400" />
+                  <Check className="w-4 h-4 text-emerald-300" />
                   Auto-applies to light + dark modes
                 </div>
                 <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-400" />
+                  <Check className="w-4 h-4 text-emerald-300" />
                   Palette chips ready for export
                 </div>
                 <div className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-400" />
+                  <Check className="w-4 h-4 text-emerald-300" />
                   One-click re-launch from builder
                 </div>
               </div>
@@ -2124,13 +2365,13 @@ function WidgetLandingPage({ onSelect, onBrandGenerator, setSearchInputRef }) {
             <div className="flex flex-col gap-3 w-full lg:w-auto">
               <button
                 onClick={onBrandGenerator}
-                className="px-8 py-3 rounded-full font-bold tracking-[0.2em] uppercase bg-white text-black hover:scale-105 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                className="px-8 py-3 rounded-full font-semibold tracking-[0.2em] uppercase bg-orange-500 text-white hover:bg-orange-600 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 cursor-pointer"
               >
                 Launch Generator
               </button>
               <button
                 onClick={() => onSelect('newButtonGenerator')}
-                className="px-8 py-3 rounded-full font-bold tracking-[0.2em] uppercase border border-white/20 text-white hover:border-cyan-300 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300"
+                className="px-8 py-3 rounded-full font-semibold tracking-[0.2em] uppercase border border-white/40 text-white hover:border-white transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white cursor-pointer"
               >
                 Preview With Buttons
               </button>
@@ -2141,17 +2382,17 @@ function WidgetLandingPage({ onSelect, onBrandGenerator, setSearchInputRef }) {
         {/* How it works */}
         <section className="space-y-6">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-400">Workflow</p>
-            <h2 className="text-2xl font-bold">How builders ship faster</h2>
+            <p className={`text-[11px] uppercase tracking-[0.3em] ${ui.kicker}`}>Workflow</p>
+            <h2 className={`text-2xl font-bold ${ui.textPrimary}`}>How builders ship faster</h2>
           </div>
           <div className="grid md:grid-cols-3 gap-4">
             {howItWorks.map((step) => (
-              <div key={step.title} className="rounded-xl border border-white/10 bg-white/5 p-5 space-y-3">
-                <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
+              <div key={step.title} className={`rounded-2xl border p-5 space-y-3 ${ui.card}`}>
+                <div className={`w-10 h-10 rounded-full border flex items-center justify-center ${isDarkMode ? 'bg-[#0B1320] border-white/10' : 'bg-sky-50 border-sky-100'}`}>
                   {step.icon}
                 </div>
-                <h3 className="text-lg font-semibold">{step.title}</h3>
-                <p className="text-sm text-neutral-300">{step.copy}</p>
+                <h3 className={`text-lg font-semibold ${ui.textPrimary}`}>{step.title}</h3>
+                <p className={`text-sm ${ui.textSecondary}`}>{step.copy}</p>
               </div>
             ))}
           </div>
@@ -2160,20 +2401,42 @@ function WidgetLandingPage({ onSelect, onBrandGenerator, setSearchInputRef }) {
         {/* Testimonials */}
         <section className="space-y-6">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.3em] text-neutral-400">Loved by teams</p>
-            <h2 className="text-2xl font-bold">Feedback from early builders</h2>
+            <p className={`text-[11px] uppercase tracking-[0.3em] ${ui.kicker}`}>Loved by teams</p>
+            <h2 className={`text-2xl font-bold ${ui.textPrimary}`}>Feedback from early builders</h2>
           </div>
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {testimonials.map((item) => (
-              <div key={item.author} className="rounded-xl border border-white/10 bg-gradient-to-br from-white/5 to-transparent p-5">
-                <p className="text-sm text-neutral-200 leading-relaxed">{item.quote}</p>
-                <p className="mt-4 text-xs uppercase tracking-[0.3em] text-neutral-400">{item.author}</p>
+              <div key={item.author} className={`rounded-2xl border p-5 ${ui.card}`}>
+                <p className={`text-sm leading-relaxed ${ui.textSecondary}`}>{item.quote}</p>
+                <p className={`mt-4 text-xs uppercase tracking-[0.3em] ${ui.kicker}`}>{item.author}</p>
               </div>
             ))}
           </div>
         </section>
 
-        <footer className="text-center pt-8 text-sm text-neutral-500">
+        <section className={`rounded-3xl border p-8 text-center space-y-4 ${ui.card}`}>
+          <p className={`text-[11px] uppercase tracking-[0.3em] ${ui.kicker}`}>Climax CTA</p>
+          <h2 className={`text-2xl md:text-3xl font-bold ${ui.textPrimary}`}>Ship your first widget in minutes</h2>
+          <p className={`text-sm max-w-2xl mx-auto ${ui.textSecondary}`}>
+            Launch the builder, pick a widget, and apply your brand kit. Your Notion pages stay polished without the manual work.
+          </p>
+          <div className="flex flex-col sm:flex-row justify-center gap-3">
+            <button
+              onClick={() => onSelect('clock')}
+              className="px-6 py-3 rounded-full text-sm font-semibold tracking-[0.2em] uppercase bg-orange-500 text-white hover:bg-orange-600 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-300 cursor-pointer"
+            >
+              Open Builder
+            </button>
+            <button
+              onClick={onBrandGenerator}
+              className={`px-6 py-3 rounded-full text-sm font-semibold tracking-[0.2em] uppercase border transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-400 cursor-pointer ${ui.outlineButton}`}
+            >
+              Generate Brand Kit
+            </button>
+          </div>
+        </section>
+
+        <footer className={`text-center pt-8 text-sm ${ui.textMuted}`}>
           <p>© {new Date().getFullYear()} Notion Wiz. Built for the Notion community.</p>
         </footer>
       </div>
@@ -2331,6 +2594,28 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, [getIsDesktop]);
+
+  const { theme } = useTheme();
+  const isDarkMode = Boolean(theme?.isDark);
+  const builderUi = useMemo(() => ({
+    page: isDarkMode ? 'bg-[#0B0E12] text-slate-100' : 'bg-slate-50 text-slate-900',
+    sidebar: isDarkMode ? 'bg-[#111827] border-white/10' : 'bg-white border-slate-200',
+    sidebarHeader: isDarkMode ? 'border-white/10' : 'border-slate-200',
+    sidebarMuted: isDarkMode ? 'text-neutral-500' : 'text-slate-400',
+    sidebarText: isDarkMode ? 'text-neutral-300' : 'text-slate-600',
+    panel: isDarkMode ? 'bg-[#0F1115] border-white/5' : 'bg-white border-slate-200',
+    panelHeader: isDarkMode ? 'bg-[#10121A] border-white/10' : 'bg-white border-slate-200',
+    panelTop: isDarkMode ? 'bg-[#0A0C12]/95 border-white/10' : 'bg-white/95 border-slate-200',
+    card: isDarkMode ? 'bg-white/5 border-white/10' : 'bg-white border-slate-200',
+    cardSoft: isDarkMode ? 'bg-white/5 border-white/10' : 'bg-slate-50 border-slate-200',
+    input: isDarkMode ? 'bg-white/5 border-interactive text-white placeholder:text-neutral-400' : 'bg-slate-100 border-slate-200 text-slate-700 placeholder:text-slate-400',
+    chip: isDarkMode ? 'border-interactive text-neutral-300 hover:border-emphasis hover:text-white hover:bg-white/5' : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900 hover:bg-slate-50',
+    chipActive: isDarkMode ? 'border-accent text-white bg-purple-500/20 shadow-sm' : 'border-sky-300 text-sky-900 bg-sky-100',
+    ghostButton: isDarkMode ? 'border-white/15 text-neutral-200 hover:border-purple-300 hover:text-white' : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900',
+    muted: isDarkMode ? 'text-neutral-400' : 'text-slate-500',
+    mutedStrong: isDarkMode ? 'text-neutral-300' : 'text-slate-600',
+    border: isDarkMode ? 'border-white/10' : 'border-slate-200',
+  }), [isDarkMode]);
 
   const debouncedConfig = useDebounce(config, DEBOUNCE_DELAY);
   const effectiveBrandTheme = brandTheme || normalizedGlobalTheme;
@@ -2539,9 +2824,129 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
       });
   }, [widgetSearch, navFilter, pinnedWidgets]);
 
+  const primaryFilters = useMemo(() => ['all', 'pinned'], []);
+  const categoryFilters = useMemo(
+    () => navFilters.filter((filter) => !primaryFilters.includes(filter)),
+    [navFilters, primaryFilters]
+  );
+  const pinnedWidgetList = useMemo(
+    () => filteredWidgets.filter((widget) => widget.isPinned),
+    [filteredWidgets]
+  );
+  const unpinnedWidgetList = useMemo(
+    () => filteredWidgets.filter((widget) => !widget.isPinned),
+    [filteredWidgets]
+  );
+
+  const showGroupedList = navFilter === 'all' && !widgetSearch.trim();
+
   const togglePinned = useCallback((id) => {
     setPinnedWidgets(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
   }, []);
+
+  const filterIconMap = {
+    all: Layout,
+    pinned: Star,
+    'Time & Productivity': Clock,
+    'Data & Information': BarChart3,
+    'Media & Display': ImageIcon,
+    'Interactive & Actions': MousePointerClick,
+    Other: MoreHorizontal
+  };
+
+  const renderFilterButton = (filter) => {
+    const label = filter === 'all' ? 'All Widgets' : filter === 'pinned' ? 'Pinned' : filter;
+    const isActive = navFilter === filter;
+    const disabled = filter === 'pinned' && pinnedWidgets.length === 0;
+    const IconComponent = filterIconMap[filter] || null;
+
+    return (
+      <button
+        key={filter}
+        type="button"
+        disabled={disabled}
+        onClick={() => setNavFilter(filter)}
+        className={`
+          text-[10px] px-3 py-1.5 rounded-full border transition-all flex items-center gap-1.5
+          ${isActive ? builderUi.chipActive : builderUi.chip}
+          ${disabled ? 'opacity-30 cursor-not-allowed' : ''}
+          focus-ring
+        `}
+        aria-pressed={isActive}
+      >
+        {IconComponent && <IconComponent className="w-3 h-3" />}
+        {label}
+      </button>
+    );
+  };
+
+  const renderWidgetItem = (widget) => {
+    const shortDescription = widget.description || `Customize the ${widget.label} widget.`;
+    const isActive = activeWidgetId === widget.id;
+
+    return (
+      <div
+        key={widget.id}
+        className={`border rounded-xl p-3 flex items-start gap-3 transition-all duration-200 ${
+          isActive 
+            ? (isDarkMode ? 'border-accent bg-purple-500/15 shadow-lg shadow-purple-900/30' : 'border-sky-300 bg-sky-100 shadow-sm')
+            : (isDarkMode ? 'border-interactive bg-white/5 hover:border-emphasis hover:bg-white/[0.07]' : 'border-slate-200 bg-white hover:border-slate-300')
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => handleWidgetChange(widget.id)}
+          className="flex-1 text-left flex items-start gap-3 focus-ring-inset rounded"
+        >
+          <div className={`pt-1 px-2 py-1 rounded-lg text-sm transition-colors ${
+            isActive ? (isDarkMode ? 'text-purple-300 bg-purple-500/10' : 'text-sky-700 bg-sky-200/70') : (isDarkMode ? 'text-neutral-300' : 'text-slate-500')
+          }`}>
+            {widget.icon}
+          </div>
+          <div className="space-y-1 flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className={`text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{widget.label}</span>
+              {isActive && (
+                <span className={`text-[10px] uppercase px-2 py-0.5 rounded-full border ${isDarkMode ? 'bg-purple-500/20 border-accent text-purple-200' : 'bg-sky-200/70 border-sky-300 text-sky-800'}`}>
+                  Active
+                </span>
+              )}
+            </div>
+            <p className={`text-[11px] leading-snug line-clamp-2 ${builderUi.muted}`}>
+              {shortDescription}
+            </p>
+            <span className={`text-[10px] uppercase tracking-wider ${builderUi.sidebarMuted}`}>
+              {widget.category}
+            </span>
+          </div>
+        </button>
+        <button
+          type="button"
+          aria-label={widget.isPinned ? 'Unpin widget' : 'Pin widget'}
+          onClick={(e) => {
+            e.stopPropagation();
+            togglePinned(widget.id);
+          }}
+          className={`p-1.5 rounded-full border transition-all focus-ring ${
+            widget.isPinned 
+              ? 'border-amber-300 text-amber-200 bg-amber-500/10 hover:bg-amber-500/20' 
+              : (isDarkMode ? 'border-interactive text-neutral-400 hover:border-amber-200 hover:text-amber-200 hover:bg-amber-500/10' : 'border-slate-200 text-slate-400 hover:border-amber-300 hover:text-amber-500 hover:bg-amber-100')
+          }`}
+        >
+          <Star className="w-3.5 h-3.5" fill={widget.isPinned ? '#FCD34D' : 'none'} />
+        </button>
+      </div>
+    );
+  };
+
+  const renderSectionHeader = (label, count) => (
+    <div className="flex items-center justify-between px-2">
+      <h3 className={`text-[10px] uppercase tracking-wider font-bold ${isDarkMode ? 'text-purple-400' : 'text-slate-500'}`}>
+        {label}
+      </h3>
+      <span className={`text-[9px] ${builderUi.sidebarMuted}`}>{count}</span>
+    </div>
+  );
 
   const tabSections = useMemo(() => {
     return [
@@ -2649,19 +3054,19 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
           <div
             key={section}
             ref={(el) => { if (el) sectionRefs.current[section] = el; }}
-            className={`border border-white/10 rounded-lg bg-white/5 overflow-hidden ${highlightedSection === section ? 'ring-2 ring-purple-400' : ''}`}
+            className={`border rounded-lg overflow-hidden ${builderUi.card} ${highlightedSection === section ? 'ring-2 ring-purple-400' : ''}`}
           >
             <button
               type="button"
               onClick={() => toggleSection(section)}
-              className="w-full px-3 py-2 flex items-center justify-between text-left text-sm font-semibold text-white"
+              className={`w-full px-3 py-2 flex items-center justify-between text-left text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}
             >
               <div className="flex flex-col text-left">
                 <span className="flex items-center gap-2">
-                  <Lock className="w-4 h-4 text-neutral-400" />
+                  <Lock className={`w-4 h-4 ${builderUi.muted}`} />
                   {sectionTitle}
                 </span>
-                <span className="text-[11px] font-normal text-neutral-400">
+                <span className={`text-[11px] font-normal ${builderUi.muted}`}>
                   Hidden while disabled. Enable this upgrade to configure it.
                 </span>
               </div>
@@ -2671,23 +3076,25 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
               />
             </button>
             {isSectionOpen(section) && (
-              <div className="p-3 space-y-3 border-t border-white/5">
-                <div className="flex items-start justify-between gap-3 bg-black/20 border border-white/10 rounded-lg p-3">
-                  <div className="text-xs text-neutral-300 leading-snug">
+              <div className={`p-3 space-y-3 border-t ${builderUi.border}`}>
+                <div className={`flex items-start justify-between gap-3 rounded-lg p-3 border ${isDarkMode ? 'bg-black/20 border-white/10' : 'bg-slate-50 border-slate-200'}`}>
+                  <div className={`text-xs leading-snug ${builderUi.mutedStrong}`}>
                     Use the expanding Upgrade orb on the preview to turn this on, or enable it here.
                   </div>
                   <div className="flex items-center gap-2 flex-shrink-0">
                     <button
                       type="button"
                       onClick={() => setShowAllButtonGeneratorSections(true)}
-                      className="text-[11px] px-3 py-1.5 rounded-full border border-white/15 text-neutral-200 hover:border-purple-300 hover:text-white transition"
+                      className={`text-[11px] px-3 py-1.5 rounded-full border transition ${builderUi.ghostButton}`}
                     >
                       Show
                     </button>
                     <button
                       type="button"
                       onClick={enableSection}
-                      className="text-[11px] px-3 py-1.5 rounded-full border border-emerald-300/60 text-emerald-100 bg-emerald-500/10 hover:bg-emerald-500/20 transition"
+                      className={`text-[11px] px-3 py-1.5 rounded-full border transition ${
+                        isDarkMode ? 'border-emerald-300/60 text-emerald-100 bg-emerald-500/10 hover:bg-emerald-500/20' : 'border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+                      }`}
                     >
                       Enable
                     </button>
@@ -2708,17 +3115,17 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
         <div
           key={section}
           ref={(el) => { if (el) sectionRefs.current[section] = el; }}
-          className={`border border-white/10 rounded-lg bg-white/5 overflow-hidden ${highlightedSection === section ? 'ring-2 ring-purple-400' : ''}`}
+          className={`border rounded-lg overflow-hidden ${builderUi.card} ${highlightedSection === section ? 'ring-2 ring-purple-400' : ''}`}
         >
           <button
             type="button"
             onClick={() => toggleSection(section)}
-            className="w-full px-3 py-2 flex items-center justify-between text-left text-sm font-semibold text-white"
+            className={`w-full px-3 py-2 flex items-center justify-between text-left text-sm font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}
           >
             <div className="flex flex-col text-left">
               <span>{sectionTitle}</span>
               {sectionConfig?.description && (
-                <span className="text-[11px] font-normal text-neutral-400">{sectionConfig.description}</span>
+                <span className={`text-[11px] font-normal ${builderUi.muted}`}>{sectionConfig.description}</span>
               )}
             </div>
             <ChevronDown
@@ -2727,12 +3134,14 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
             />
           </button>
           {open && (
-            <div className="p-3 space-y-3 border-t border-white/5">
+            <div className={`p-3 space-y-3 border-t ${builderUi.border}`}>
               {sectionConfig?.notes?.length > 0 && (
-                <div className="space-y-2 text-[11px] text-neutral-300 bg-white/5 rounded p-2">
+                <div className={`space-y-2 text-[11px] rounded p-2 border ${
+                  isDarkMode ? 'text-neutral-300 bg-white/5 border-white/10' : 'text-slate-600 bg-slate-50 border-slate-200'
+                }`}>
                   {sectionConfig.notes.map((note) => (
                     <div key={`${section}-${note.title}`} className="space-y-1">
-                      <div className="text-xs font-semibold text-white">{note.title}</div>
+                      <div className={`text-xs font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>{note.title}</div>
                       {note.body && <p>{note.body}</p>}
                     </div>
                   ))}
@@ -2776,7 +3185,7 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
     if (sectionNodes.length === 0) {
       return {
         nodes: [
-          <div key="empty" className="text-xs text-neutral-400 italic">
+          <div key="empty" className={`text-xs italic ${builderUi.muted}`}>
             {query ? `No settings match "${configSearch}".` : 'No configurable settings available.'}
           </div>
         ],
@@ -2796,8 +3205,10 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
     brandTheme,
     config,
     configSearch,
+    builderUi,
     handleConfigChange,
     highlightedSection,
+    isDarkMode,
     isSectionOpen,
     showAllButtonGeneratorSections,
     toggleSection,
@@ -2806,6 +3217,10 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
 
   const { nodes: configSectionNodes, total: totalSectionCount } = configSectionsRender;
   const hasMoreSections = !configSearch.trim() && totalSectionCount > visibleSectionCount;
+  const visibleSections = Math.min(visibleSectionCount, totalSectionCount);
+  const panelStatus = configSearch.trim()
+    ? `${totalSectionCount} sections matched`
+    : `Showing ${visibleSections} of ${totalSectionCount} sections`;
 
   useEffect(() => {
     if (configSearch.trim()) return;
@@ -3032,7 +3447,7 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
   }, [activeWidgetId, config, handleConfigChange, handleCustomizeRequest]);
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row font-sans" style={{ backgroundColor: 'var(--jazer-night-black)', color: 'var(--jazer-stardust-white)' }}>
+    <div className={`min-h-screen flex flex-col lg:flex-row font-sans ${builderUi.page}`}>
       {!isDesktop && isSidebarOpen && (
         <button
           type="button"
@@ -3043,13 +3458,13 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
       )}
       {/* SIDEBAR */}
       <div
-        className={`${isDesktop ? 'relative w-full lg:w-72' : 'fixed inset-y-0 left-0 w-72 max-w-[85vw] transform transition-transform duration-300 z-40'} flex flex-col h-full min-h-0`}
-        style={{ backgroundColor: 'var(--jazer-graphite)', borderRight: '1px solid var(--jazer-soft-slate)', transform: isDesktop || isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)' }}
+        className={`${isDesktop ? 'relative w-full lg:w-72' : 'fixed inset-y-0 left-0 w-72 max-w-[85vw] transform transition-transform duration-300 z-40'} flex flex-col h-full min-h-0 ${builderUi.sidebar}`}
+        style={{ transform: isDesktop || isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)' }}
       >
-        <div className="p-4 space-y-3" style={{ borderBottom: '1px solid var(--jazer-soft-slate)' }}>
+        <div className={`p-4 space-y-3 border-b ${builderUi.sidebarHeader}`}>
           <div className="flex items-center justify-between gap-2">
             <div>
-              <p className="text-[10px] uppercase tracking-[0.3em] text-neutral-500">Builder</p>
+              <p className={`text-[10px] uppercase tracking-[0.3em] ${builderUi.sidebarMuted}`}>Builder</p>
               <h1 className="text-lg font-bold flex items-center gap-2 gradient-text neon-text">
                 <Layout className="w-5 h-5" style={{ color: 'var(--jazer-electric-purple)' }} /> {ActiveWidget?.label || 'Widget'}
               </h1>
@@ -3060,86 +3475,63 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
                   type="button"
                   aria-label="Close widget list"
                   onClick={() => setIsSidebarOpen(false)}
-                  className="p-1 rounded-full border border-white/15 text-neutral-200 hover:border-purple-400 hover:text-white transition"
+                  className={`p-1 rounded-full border transition ${builderUi.ghostButton}`}
                 >
                   <X className="w-3 h-3" />
                 </button>
               )}
-              <button aria-label="Navigate back to home" onClick={onBack} className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border border-white/10 text-neutral-300 hover:border-purple-400 hover:text-white transition-colors">
+              <button
+                aria-label="Navigate back to home"
+                onClick={onBack}
+                className={`flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full border transition-colors ${builderUi.ghostButton}`}
+              >
                 <ArrowLeft className="w-3 h-3" /> Exit
               </button>
             </div>
           </div>
-          <p className="text-[11px] text-neutral-400 leading-snug">
+          <p className={`text-[11px] leading-snug ${builderUi.muted}`}>
             Choose a widget to edit. Use search or pin your frequent favorites for faster access.
           </p>
         </div>
-        <div className="px-4 py-3 border-b border-subtle space-y-2">
+        <div className={`px-4 py-3 border-b space-y-2 ${builderUi.sidebarHeader}`}>
           <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+                <Search className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 ${builderUi.sidebarMuted}`} />
                 <input
                   type="text"
                   value={widgetSearch}
                   onChange={(e) => setWidgetSearch(e.target.value)}
                   placeholder="Search widgets..."
-                  className="w-full bg-white/5 border-interactive rounded-full py-2 pl-9 pr-9 text-sm text-white placeholder:text-neutral-400 focus-ring transition-all"
+                  className={`w-full rounded-full py-2 pl-9 pr-9 text-sm focus-ring transition-all ${builderUi.input}`}
                   aria-label="Search widgets"
                 />
                 {widgetSearch && (
                   <button
                     onClick={() => setWidgetSearch('')}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-neutral-500 hover:text-white transition-colors focus-ring rounded"
+                    className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors focus-ring rounded ${builderUi.sidebarMuted} ${isDarkMode ? 'hover:text-white' : 'hover:text-slate-900'}`}
                     aria-label="Clear search"
                   >
                     <X className="w-4 h-4" />
                   </button>
                 )}
           </div>
-          <div className="flex items-center justify-between text-[10px] uppercase tracking-widest text-neutral-500">
+          <div className={`flex items-center justify-between text-[10px] uppercase tracking-widest ${builderUi.sidebarMuted}`}>
             <span>{filteredWidgets.length} results</span>
-            <span className="text-neutral-400">Pin favorites for quick access</span>
+            <span className={builderUi.muted}>Pin favorites for quick access</span>
           </div>
         </div>
-        <div className="px-4 py-2 border-b border-subtle flex flex-wrap gap-2">
-          {navFilters.map(filter => {
-            const label = filter === 'all' ? 'All Widgets' : filter === 'pinned' ? 'Pinned' : filter;
-            const isActive = navFilter === filter;
-            const disabled = filter === 'pinned' && pinnedWidgets.length === 0;
-            
-            // Icons for categories
-            const icons = {
-              all: Layout,
-              pinned: Star,
-              'Time & Productivity': Clock,
-              'Data & Information': BarChart3,
-              'Media & Display': ImageIcon,
-              'Interactive & Actions': MousePointerClick,
-              Other: MoreHorizontal
-            };
-            const IconComponent = icons[filter] || null;
-            
-            return (
-              <button
-                key={filter}
-                type="button"
-                disabled={disabled}
-                onClick={() => setNavFilter(filter)}
-                className={`
-                  text-[10px] px-3 py-1.5 rounded-full border transition-all flex items-center gap-1.5
-                  ${isActive 
-                    ? 'border-accent text-white bg-purple-500/20 shadow-sm' 
-                    : 'border-interactive text-neutral-300 hover:border-emphasis hover:text-white hover:bg-white/5'
-                  } 
-                  ${disabled ? 'opacity-30 cursor-not-allowed' : ''} 
-                  focus-ring
-                `}
-                aria-pressed={isActive}
-              >
-                {IconComponent && <IconComponent className="w-3 h-3" />}
-                {label}
-              </button>
-            );
-          })}
+        <div className={`px-4 py-3 border-b space-y-3 ${builderUi.sidebarHeader}`}>
+          <div>
+            <p className={`text-[10px] uppercase tracking-[0.3em] ${builderUi.sidebarMuted}`}>Quick Filters</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {primaryFilters.map(renderFilterButton)}
+            </div>
+          </div>
+          <div>
+            <p className={`text-[10px] uppercase tracking-[0.3em] ${builderUi.sidebarMuted}`}>Categories</p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {categoryFilters.map(renderFilterButton)}
+            </div>
+          </div>
         </div>
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-3">
           {/* Recent Widgets Section */}
@@ -3150,7 +3542,7 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
                   <Clock className="w-3 h-3" />
                   Recent
                 </h3>
-                <span className="text-[9px] text-neutral-500">{recentWidgets.length}</span>
+                <span className={`text-[9px] ${builderUi.sidebarMuted}`}>{recentWidgets.length}</span>
               </div>
               <div className="space-y-1.5">
                 {recentWidgets.slice(0, 3).map(recent => {
@@ -3163,14 +3555,14 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
                       className={`
                         w-full px-3 py-2 rounded-lg text-left transition-all flex items-center justify-between group
                         ${isActive 
-                          ? 'bg-purple-500/15 border border-accent text-white' 
-                          : 'bg-white/5 border border-subtle hover:border-interactive hover:bg-white/[0.07] text-neutral-300 hover:text-white'
+                          ? (isDarkMode ? 'bg-purple-500/15 border border-accent text-white' : 'bg-sky-100 border border-sky-300 text-sky-900')
+                          : (isDarkMode ? 'bg-white/5 border border-subtle hover:border-interactive hover:bg-white/[0.07] text-neutral-300 hover:text-white' : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900')
                         }
                       `}
                     >
                       <div className="flex-1 min-w-0">
                         <div className="text-xs font-medium truncate">{recent.label}</div>
-                        <div className="text-[10px] text-neutral-500">
+                        <div className={`text-[10px] ${builderUi.sidebarMuted}`}>
                           {formatRelativeTime(recent.timestamp)}
                         </div>
                       </div>
@@ -3179,89 +3571,55 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
                   );
                 })}
               </div>
-              <div className="border-t border-subtle pt-2" />
+              <div className={`border-t pt-2 ${builderUi.sidebarHeader}`} />
             </div>
           )}
 
           {/* Main Widget List */}
           {filteredWidgets.length === 0 ? (
-            <div className="text-xs text-neutral-400 bg-white/5 border-subtle rounded-xl p-4">
+            <div className={`text-xs rounded-xl p-4 ${builderUi.card} ${builderUi.muted}`}>
               No widgets match your search. Try a different phrase or reset filters.
             </div>
-          ) : (
-            filteredWidgets.map(w => {
-              const shortDescription = w.description || `Customize the ${w.label} widget.`;
-              const isActive = activeWidgetId === w.id;
-              return (
-                <div
-                  key={w.id}
-                  className={`border rounded-xl p-3 flex items-start gap-3 transition-all duration-200 ${
-                    isActive 
-                      ? 'border-accent bg-purple-500/15 shadow-lg shadow-purple-900/30' 
-                      : 'border-interactive bg-white/5 hover:border-emphasis hover:bg-white/[0.07]'
-                  }`}
-                >
-                  <button
-                    type="button"
-                    onClick={() => handleWidgetChange(w.id)}
-                    className="flex-1 text-left flex items-start gap-3 focus-ring-inset rounded"
-                  >
-                    <div className={`pt-1 px-2 py-1 rounded-lg text-sm transition-colors ${
-                      isActive ? 'text-purple-300 bg-purple-500/10' : 'text-neutral-300'
-                    }`}>
-                      {w.icon}
-                    </div>
-                    <div className="space-y-1 flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="text-sm font-semibold text-white">{w.label}</span>
-                        {isActive && (
-                          <span className="text-[10px] uppercase px-2 py-0.5 rounded-full bg-purple-500/20 border border-accent text-purple-200">
-                            Active
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-neutral-400 leading-snug line-clamp-2">
-                        {shortDescription}
-                      </p>
-                      <span className="text-[10px] uppercase tracking-wider text-neutral-500">
-                        {w.category}
-                      </span>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    aria-label={w.isPinned ? 'Unpin widget' : 'Pin widget'}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      togglePinned(w.id);
-                    }}
-                    className={`p-1.5 rounded-full border transition-all focus-ring ${
-                      w.isPinned 
-                        ? 'border-amber-300 text-amber-200 bg-amber-500/10 hover:bg-amber-500/20' 
-                        : 'border-interactive text-neutral-400 hover:border-amber-200 hover:text-amber-200 hover:bg-amber-500/10'
-                    }`}
-                  >
-                    <Star className="w-3.5 h-3.5" fill={w.isPinned ? '#FCD34D' : 'none'} />
-                  </button>
+          ) : showGroupedList ? (
+            <div className="space-y-4">
+              {pinnedWidgetList.length > 0 && (
+                <div className="space-y-2">
+                  {renderSectionHeader('Pinned Widgets', pinnedWidgetList.length)}
+                  <div className="space-y-2">
+                    {pinnedWidgetList.map(renderWidgetItem)}
+                  </div>
+                  <div className={`border-t ${builderUi.sidebarHeader}`} />
                 </div>
-              );
-            })
+              )}
+              {unpinnedWidgetList.length > 0 && (
+                <div className="space-y-2">
+                  {renderSectionHeader('All Widgets', unpinnedWidgetList.length)}
+                  <div className="space-y-2">
+                    {unpinnedWidgetList.map(renderWidgetItem)}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {filteredWidgets.map(renderWidgetItem)}
+            </div>
           )}
         </nav>
       </div>
 
-      <div className="flex-1 flex flex-col min-h-0" style={{ backgroundColor: 'var(--jazer-night-black)' }}>
-        <div className="border-b border-white/10 bg-[#10121A] px-4 py-4 sm:px-6 sm:py-6 space-y-4">
+      <div className={`flex-1 flex flex-col min-h-0 ${isDarkMode ? 'bg-[#0B0E12]' : 'bg-slate-100'}`}>
+        <div className={`border-b px-4 py-4 sm:px-6 sm:py-6 space-y-4 ${builderUi.panelHeader}`}>
           {!isDesktop && (
             <div className="flex items-center justify-between">
               <button
                 type="button"
                 onClick={() => setIsSidebarOpen(true)}
-                className="px-3 py-1.5 rounded-full border border-white/15 text-xs uppercase tracking-[0.3em] flex items-center gap-2 text-neutral-200 hover:border-purple-300 hover:text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400"
+                className={`px-3 py-1.5 rounded-full border text-xs uppercase tracking-[0.3em] flex items-center gap-2 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400 ${builderUi.ghostButton}`}
               >
                 <Layout className="w-3 h-3" /> Widgets
               </button>
-              <span className="text-[11px] uppercase tracking-[0.3em] text-neutral-500">Preview</span>
+              <span className={`text-[11px] uppercase tracking-[0.3em] ${builderUi.sidebarMuted}`}>Preview</span>
             </div>
           )}
           <ResizablePreviewPanel
@@ -3279,9 +3637,9 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
           />
         </div>
 
-        <div className="flex-1 flex flex-col border-t border-white/5 bg-[#0F1115] min-h-0">
-          <div className="lg:sticky lg:top-0 z-10 border-b border-white/10 bg-[#0A0C12]/95 backdrop-blur-md px-4 py-3 flex flex-wrap items-center gap-3">
-            <div className="text-xs font-bold uppercase tracking-[0.4em] text-neutral-500">Configure</div>
+        <div className={`flex-1 flex flex-col border-t min-h-0 ${builderUi.panel}`}>
+          <div className={`lg:sticky lg:top-0 z-10 border-b backdrop-blur-md px-4 py-3 flex flex-wrap items-center gap-3 ${builderUi.panelTop}`}>
+            <div className={`text-xs font-bold uppercase tracking-[0.4em] ${builderUi.sidebarMuted}`}>Configure</div>
             <div className="flex items-center gap-2 ml-auto">
               {activeWidgetId === 'newButtonGenerator' && (
                 <button
@@ -3289,8 +3647,8 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
                   onClick={() => setShowAllButtonGeneratorSections((prev) => !prev)}
                   className={`text-[11px] px-3 py-1.5 rounded-full border transition flex items-center gap-1.5 ${
                     showAllButtonGeneratorSections
-                      ? 'border-emerald-300/60 text-emerald-100 bg-emerald-500/10'
-                      : 'border-white/15 text-neutral-200 hover:border-purple-300 hover:text-white'
+                      ? (isDarkMode ? 'border-emerald-300/60 text-emerald-100 bg-emerald-500/10' : 'border-emerald-300 text-emerald-700 bg-emerald-50')
+                      : builderUi.ghostButton
                   }`}
                   aria-pressed={showAllButtonGeneratorSections}
                   title={showAllButtonGeneratorSections ? 'Hide advanced sections when disabled' : 'Show all sections (even if disabled)'}
@@ -3303,14 +3661,14 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
                 <button
                   type="button"
                   onClick={() => setShowTabMenu((prev) => !prev)}
-                  className="flex items-center gap-2 px-3 py-1.5 text-[11px] rounded-full border border-white/15 text-neutral-200 hover:border-purple-300 hover:text-white transition"
+                  className={`flex items-center gap-2 px-3 py-1.5 text-[11px] rounded-full border transition ${builderUi.ghostButton}`}
                   aria-expanded={showTabMenu}
                 >
                   <Menu className="w-4 h-4" />
                   Sections
                 </button>
                 {showTabMenu && (
-                  <div className="absolute right-0 mt-2 w-60 bg-[#0C0F16] border border-white/10 rounded-xl shadow-lg shadow-black/40 p-2 space-y-1 max-h-72 overflow-y-auto custom-scrollbar">
+                  <div className={`absolute right-0 mt-2 w-60 border rounded-xl shadow-lg shadow-black/40 p-2 space-y-1 max-h-72 overflow-y-auto custom-scrollbar ${isDarkMode ? 'bg-[#0C0F16] border-white/10' : 'bg-white border-slate-200'}`}>
                     {tabSections.map(tab => {
                       const isActive = highlightedSection === tab.id || (tab.id === 'brandControls' && !highlightedSection);
                       return (
@@ -3323,45 +3681,75 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
                           }}
                           className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-[12px] transition ${
                             isActive
-                              ? 'bg-purple-500/20 border border-purple-400 text-white'
-                              : 'bg-white/5 border border-white/5 text-neutral-200 hover:border-purple-300 hover:text-white'
+                              ? (isDarkMode ? 'bg-purple-500/20 border border-purple-400 text-white' : 'bg-sky-100 border border-sky-300 text-sky-900')
+                              : (isDarkMode ? 'bg-white/5 border border-white/5 text-neutral-200 hover:border-purple-300 hover:text-white' : 'bg-white border border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900')
                           }`}
                         >
                           <span>{tab.label}</span>
-                          {isActive && <span className="text-[10px] uppercase tracking-wide text-purple-200">Active</span>}
+                          {isActive && <span className={`text-[10px] uppercase tracking-wide ${isDarkMode ? 'text-purple-200' : 'text-sky-700'}`}>Active</span>}
                         </button>
                       );
                     })}
                   </div>
                 )}
               </div>
-              <button aria-label="Get export code" onClick={() => setShowExport(true)} className="text-[11px] px-3 py-1.5 rounded-full border border-pink-400/60 text-white bg-pink-500/20 hover:bg-pink-500/30 transition flex items-center gap-1">
+              <button
+                aria-label="Get export code"
+                onClick={() => setShowExport(true)}
+                className={`text-[11px] px-3 py-1.5 rounded-full border transition flex items-center gap-1 ${
+                  isDarkMode
+                    ? 'border-pink-400/60 text-white bg-pink-500/20 hover:bg-pink-500/30'
+                    : 'border-pink-200 text-pink-700 bg-pink-50 hover:bg-pink-100'
+                }`}
+              >
                 <Download className="w-3 h-3" /> Export
               </button>
             </div>
           </div>
 
-          <div
-            ref={configPanelRef}
-            className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-8 transition-all"
-            style={{
-              outline: panelPulse ? '2px solid var(--jazer-electric-purple)' : 'none',
-              outlineOffset: panelPulse ? '2px' : '0',
-              overscrollBehavior: 'contain',
-              paddingBottom: !isDesktop ? '8rem' : undefined
-            }}
+        <div
+          ref={configPanelRef}
+          className="flex-1 overflow-y-auto px-4 sm:px-6 py-6 space-y-8 transition-all"
+          style={{
+            outline: panelPulse ? '2px solid var(--jazer-electric-purple)' : 'none',
+            outlineOffset: panelPulse ? '2px' : '0',
+            overscrollBehavior: 'contain',
+            paddingBottom: !isDesktop ? '8rem' : undefined
+          }}
+        >
+          <div className={`rounded-2xl border p-4 flex flex-wrap items-center justify-between gap-3 ${builderUi.cardSoft}`}>
+            <div className="space-y-1">
+              <p className={`text-[10px] uppercase tracking-[0.3em] ${builderUi.muted}`}>Customize</p>
+              <h2 className={`text-lg font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>
+                {ActiveWidget?.label || 'Widget'} Configuration
+              </h2>
+              {ActiveWidget?.description && (
+                <p className={`text-xs ${builderUi.mutedStrong}`}>{ActiveWidget.description}</p>
+              )}
+            </div>
+            <div className={`text-[11px] uppercase tracking-[0.3em] ${builderUi.sidebarMuted}`}>
+              {panelStatus}
+            </div>
+          </div>
+          <div className={`flex items-center gap-2 text-xs font-bold uppercase ${builderUi.muted}`}>
+            <Palette className="w-3 h-3" /> Brand + Surface
+          </div>
+          <section
+            ref={(el) => { if (el) sectionRefs.current['brandControls'] = el; }}
+            className={`space-y-4 border rounded-2xl p-5 ${builderUi.card}`}
           >
-            <section
-              ref={(el) => { if (el) sectionRefs.current['brandControls'] = el; }}
-              className="space-y-4 bg-white/5 border border-white/10 rounded-2xl p-5"
-            >
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.3em] text-neutral-400">Brand Kit</p>
-                  <h3 className="text-base font-semibold text-white">Global Palette</h3>
+                  <p className={`text-[10px] uppercase tracking-[0.3em] ${builderUi.muted}`}>Brand Kit</p>
+                  <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Global Palette</h3>
                 </div>
                 <div className="flex items-center gap-2">
-                  <select aria-label="Select brand kit" value={activeBrandId} onChange={(e) => handleBrandChange(e.target.value)} className="bg-[#0B0E12] border border-white/10 rounded-full text-xs text-white px-3 py-1.5">
+                  <select
+                    aria-label="Select brand kit"
+                    value={activeBrandId}
+                    onChange={(e) => handleBrandChange(e.target.value)}
+                    className={`rounded-full text-xs px-3 py-1.5 border ${isDarkMode ? 'bg-[#0B0E12] border-white/10 text-white' : 'bg-white border-slate-200 text-slate-700'}`}
+                  >
                     <option value="none">None</option>
                     <option value="jazer">Neon</option>
                     {hasCustomBrandTheme && (
@@ -3372,7 +3760,9 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
                     <button
                       type="button"
                       onClick={onLaunchBrandGenerator}
-                      className="text-[11px] px-3 py-1.5 rounded-full border border-cyan-400/60 text-cyan-100 hover:border-cyan-200 transition"
+                      className={`text-[11px] px-3 py-1.5 rounded-full border transition ${
+                        isDarkMode ? 'border-cyan-400/60 text-cyan-100 hover:border-cyan-200' : 'border-cyan-300 text-cyan-700 hover:border-cyan-400'
+                      }`}
                     >
                       Launch Generator
                     </button>
@@ -3382,17 +3772,17 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
               <div className="grid md:grid-cols-2 gap-3">
                 <div className="space-y-3">
                   {activeBrandId === 'jazer' && (
-                    <div className="p-3 bg-purple-500/10 border border-purple-400/40 rounded-xl text-xs text-purple-100 space-y-1">
+                    <div className={`p-3 rounded-xl text-xs space-y-1 ${isDarkMode ? 'bg-purple-500/10 border border-purple-400/40 text-purple-100' : 'bg-purple-50 border border-purple-200 text-purple-700'}`}>
                       <div className="font-semibold flex items-center gap-2"><Sparkles className="w-3 h-3" /> Official Neon Kit</div>
-                      <p className="text-purple-200/80">Orbitron & Montserrat fonts, neon gradient accents, and night-mode canvas.</p>
+                      <p className={isDarkMode ? 'text-purple-200/80' : 'text-purple-600'}>Orbitron & Montserrat fonts, neon gradient accents, and night-mode canvas.</p>
                     </div>
                   )}
                   {activeBrandId === 'custom' && effectiveBrandTheme && (
-                    <div className="p-3 bg-cyan-500/10 border border-cyan-400/40 rounded-xl text-xs text-cyan-100 space-y-2">
+                    <div className={`p-3 rounded-xl text-xs space-y-2 ${isDarkMode ? 'bg-cyan-500/10 border border-cyan-400/40 text-cyan-100' : 'bg-cyan-50 border border-cyan-200 text-cyan-700'}`}>
                       <div className="font-semibold flex items-center gap-2">
                         <Sparkles className="w-3 h-3" /> {customBrandLabel}
                       </div>
-                      <p className="text-cyan-100/80">Widgets are synced with your logo palette.</p>
+                      <p className={isDarkMode ? 'text-cyan-100/80' : 'text-cyan-600'}>Widgets are synced with your logo palette.</p>
                       <div className="grid grid-cols-2 gap-2">
                         {[
                           { label: 'Background', color: effectiveBrandTheme.backgroundColor || effectiveBrandTheme.background },
@@ -3401,9 +3791,9 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
                           { label: 'Text', color: effectiveBrandTheme.textColor || effectiveBrandTheme.text }
                         ].map(({ label, color }) => (
                           <div key={label} className="text-center">
-                            <div className="h-10 rounded border border-white/20" style={{ backgroundColor: color || '#0B0E12' }} />
-                            <div className="mt-1 text-[9px] uppercase text-neutral-400">{label}</div>
-                            <div className="text-[9px] font-mono text-neutral-300">{color || '--'}</div>
+                            <div className={`h-10 rounded border ${isDarkMode ? 'border-white/20' : 'border-slate-200'}`} style={{ backgroundColor: color || '#0B0E12' }} />
+                            <div className={`mt-1 text-[9px] uppercase ${builderUi.muted}`}>{label}</div>
+                            <div className={`text-[9px] font-mono ${builderUi.mutedStrong}`}>{color || '--'}</div>
                           </div>
                         ))}
                       </div>
@@ -3411,13 +3801,13 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
                   )}
                 </div>
                 {activeBrandId === 'custom' && effectiveBrandTheme?.palette?.length > 0 && (
-                  <div className="bg-[#0B0E12] border border-white/10 rounded-xl p-3">
-                    <div className="text-[10px] uppercase text-neutral-500 mb-2">Palette Swatches</div>
+                  <div className={`rounded-xl p-3 border ${isDarkMode ? 'bg-[#0B0E12] border-white/10' : 'bg-white border-slate-200'}`}>
+                    <div className={`text-[10px] uppercase mb-2 ${builderUi.sidebarMuted}`}>Palette Swatches</div>
                     <div className="grid grid-cols-5 gap-2">
                       {effectiveBrandTheme.palette.map((color, idx) => (
                         <div key={`${color}-${idx}`} className="text-center">
-                          <div className="w-full h-10 rounded border border-white/10" style={{ backgroundColor: color }} />
-                          <div className="text-[8px] text-neutral-400 truncate mt-1">{color}</div>
+                          <div className={`w-full h-10 rounded border ${isDarkMode ? 'border-white/10' : 'border-slate-200'}`} style={{ backgroundColor: color }} />
+                          <div className={`text-[8px] truncate mt-1 ${builderUi.muted}`}>{color}</div>
                         </div>
                       ))}
                     </div>
@@ -3429,15 +3819,15 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
 
             <section
               ref={(el) => { if (el) sectionRefs.current['appearanceControls'] = el; }}
-              className="space-y-4 bg-white/5 border border-white/10 rounded-2xl p-5"
+              className={`space-y-4 border rounded-2xl p-5 ${builderUi.card}`}
             >
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div>
-                  <p className="text-[10px] uppercase tracking-[0.3em] text-neutral-400">Surface</p>
-                  <h3 className="text-base font-semibold text-white">Canvas & Appearance</h3>
+                  <p className={`text-[10px] uppercase tracking-[0.3em] ${builderUi.muted}`}>Surface</p>
+                  <h3 className={`text-base font-semibold ${isDarkMode ? 'text-white' : 'text-slate-900'}`}>Canvas & Appearance</h3>
                 </div>
                 {config.fontSize !== undefined && (
-                  <div className="text-[11px] text-neutral-400">
+                  <div className={`text-[11px] ${builderUi.muted}`}>
                     {config.fontSize}px
                   </div>
                 )}
@@ -3445,50 +3835,61 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
               {config.fontSize !== undefined && (
                 <div className="space-y-1.5">
                   <div className="flex justify-between">
-                    <label className="block text-xs font-medium text-neutral-400">Font Size</label>
+                    <label className={`block text-xs font-medium ${builderUi.muted}`}>Font Size</label>
                   </div>
-                  <input aria-label="Font size slider" type="range" min={MIN_FONT_SIZE} max={MAX_FONT_SIZE} value={config.fontSize} onChange={(e) => handleConfigChange('fontSize', parseInt(e.target.value))} className="w-full h-2 bg-neutral-800 rounded-full appearance-none cursor-pointer accent-purple-500" />
+                  <input
+                    aria-label="Font size slider"
+                    type="range"
+                    min={MIN_FONT_SIZE}
+                    max={MAX_FONT_SIZE}
+                    value={config.fontSize}
+                    onChange={(e) => handleConfigChange('fontSize', parseInt(e.target.value))}
+                    className={`w-full h-2 rounded-full appearance-none cursor-pointer accent-purple-500 ${isDarkMode ? 'bg-neutral-800' : 'bg-slate-200'}`}
+                  />
                 </div>
               )}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-medium text-neutral-400 mb-1">Background</label>
-                  <div className="flex items-center gap-2 border border-white/10 p-2 rounded-lg">
+                  <label className={`block text-xs font-medium mb-1 ${builderUi.muted}`}>Background</label>
+                  <div className={`flex items-center gap-2 border p-2 rounded-lg ${builderUi.border}`}>
                     <input aria-label="Background color" type="color" value={config.bgColor} onChange={(e) => handleConfigChange('bgColor', e.target.value)} className="w-8 h-8 rounded border-none" />
-                    <span className="text-[10px] font-mono text-neutral-400">{config.bgColor}</span>
+                    <span className={`text-[10px] font-mono ${builderUi.muted}`}>{config.bgColor}</span>
                   </div>
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-neutral-400 mb-1">Text</label>
-                  <div className="flex items-center gap-2 border border-white/10 p-2 rounded-lg">
+                  <label className={`block text-xs font-medium mb-1 ${builderUi.muted}`}>Text</label>
+                  <div className={`flex items-center gap-2 border p-2 rounded-lg ${builderUi.border}`}>
                     <input aria-label="Text color" type="color" value={config.textColor || '#000000'} onChange={(e) => handleConfigChange('textColor', e.target.value)} className="w-8 h-8 rounded border-none" />
-                    <span className="text-[10px] font-mono text-neutral-400">{config.textColor}</span>
+                    <span className={`text-[10px] font-mono ${builderUi.muted}`}>{config.textColor}</span>
                   </div>
                 </div>
               </div>
             </section>
 
-            <section className="space-y-4 bg-white/5 border border-white/10 rounded-2xl p-5">
-              <div className="flex items-center justify-between text-xs font-bold text-neutral-400 uppercase">
+            <div className={`flex items-center gap-2 text-xs font-bold uppercase ${builderUi.muted}`}>
+              <Search className="w-3 h-3" /> Navigate & Filter
+            </div>
+            <section className={`space-y-4 border rounded-2xl p-5 ${builderUi.card}`}>
+              <div className={`flex items-center justify-between text-xs font-bold uppercase ${builderUi.muted}`}>
                 <span className="flex items-center gap-2"><Search className="w-3 h-3" /> Quick Find</span>
                 {configSearch && (
                   <button
                     type="button"
                     onClick={() => handleConfigSearchChange('')}
-                    className="text-[10px] text-neutral-300 hover:text-white transition-colors"
+                    className={`text-[10px] transition-colors ${isDarkMode ? 'text-neutral-300 hover:text-white' : 'text-slate-500 hover:text-slate-900'}`}
                   >
                     Clear
                   </button>
                 )}
               </div>
               <div className="relative">
-                <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-neutral-500" />
+                <Search className={`w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 ${builderUi.sidebarMuted}`} />
                 <input
                   type="text"
                   value={configSearch}
                   onChange={(e) => handleConfigSearchChange(e.target.value)}
                   placeholder="Search labels, sections, or controls..."
-                  className="w-full bg-white/5 border border-white/10 rounded-full py-2.5 pl-10 pr-3 text-sm text-white placeholder:text-neutral-400 focus:outline-none focus:border-purple-400 focus:ring-0"
+                  className={`w-full rounded-full py-2.5 pl-10 pr-3 text-sm focus:outline-none focus:ring-0 ${builderUi.input} ${isDarkMode ? 'focus:border-purple-400' : 'focus:border-sky-400'}`}
                 />
               </div>
               {sectionOutline.length > 0 && (
@@ -3498,7 +3899,11 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
                       key={section.id}
                       type="button"
                       onClick={() => handleCustomizeRequest(section.id)}
-                      className={`px-3 py-1.5 rounded-full border text-[11px] ${highlightedSection === section.id ? 'border-purple-400 text-white bg-purple-500/20' : 'border-white/10 text-neutral-300 hover:border-purple-300 hover:text-white'}`}
+                      className={`px-3 py-1.5 rounded-full border text-[11px] ${
+                        highlightedSection === section.id
+                          ? (isDarkMode ? 'border-purple-400 text-white bg-purple-500/20' : 'border-sky-300 text-sky-900 bg-sky-100')
+                          : (isDarkMode ? 'border-white/10 text-neutral-300 hover:border-purple-300 hover:text-white' : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:text-slate-900')
+                      }`}
                     >
                       {section.label} · {section.controlCount}
                     </button>
@@ -3657,15 +4062,15 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
 
           {/* Fields - Grouped by Section */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2 text-xs font-bold text-neutral-400 uppercase">
-              <Settings className="w-3 h-3" /> Widget Controls
+            <div className={`flex items-center gap-2 text-xs font-bold uppercase ${builderUi.muted}`}>
+              <Settings className="w-3 h-3" /> Configure Sections
             </div>
 
             {configSectionNodes}
             {hasMoreSections && (
               <div
                 ref={infiniteScrollRef}
-                className="py-4 text-center text-[11px] text-neutral-400"
+                className={`py-4 text-center text-[11px] ${builderUi.muted}`}
               >
                 Keep scrolling to load more controls...
               </div>
@@ -3673,84 +4078,89 @@ function NotionWidgetBuilder({ initialWidgetId, onBack, globalBrandTheme, onBran
           </div>
 
           <div className="space-y-3 mt-8">
-            <div className="flex items-center gap-2 text-xs font-bold text-neutral-400 uppercase tracking-widest border-b border-neutral-100 pb-2">
+            <div className={`flex items-center gap-2 text-xs font-bold uppercase tracking-widest border-b pb-2 ${builderUi.muted} ${builderUi.border}`}>
               <Palette className="w-3 h-3" /> Light Mode Colors
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-neutral-600">Text Color</label>
-              <div className="flex items-center gap-2 border border-neutral-200 p-1 rounded">
+              <label className={`block text-xs font-medium ${builderUi.mutedStrong}`}>Text Color</label>
+              <div className={`flex items-center gap-2 border p-1 rounded ${builderUi.border}`}>
                 <input type="color" value={config.lightMode?.textColor || JAZER_BRAND.colors.graphite} onChange={(e) => handleConfigChange('lightMode', { textColor: e.target.value })} className="w-6 h-6 rounded cursor-pointer border-none" />
-                <span className="text-[10px] font-mono text-neutral-400">{config.lightMode?.textColor || JAZER_BRAND.colors.graphite}</span>
+                <span className={`text-[10px] font-mono ${builderUi.muted}`}>{config.lightMode?.textColor || JAZER_BRAND.colors.graphite}</span>
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-neutral-600">Panel Color</label>
-              <div className="flex items-center gap-2 border border-neutral-200 p-1 rounded">
+              <label className={`block text-xs font-medium ${builderUi.mutedStrong}`}>Panel Color</label>
+              <div className={`flex items-center gap-2 border p-1 rounded ${builderUi.border}`}>
                 <input type="color" value={config.lightMode?.panelColor || JAZER_BRAND.colors.stardustWhite} onChange={(e) => handleConfigChange('lightMode', { panelColor: e.target.value })} className="w-6 h-6 rounded cursor-pointer border-none" />
-                <span className="text-[10px] font-mono text-neutral-400">{config.lightMode?.panelColor || JAZER_BRAND.colors.stardustWhite}</span>
+                <span className={`text-[10px] font-mono ${builderUi.muted}`}>{config.lightMode?.panelColor || JAZER_BRAND.colors.stardustWhite}</span>
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-neutral-600">Digit Color</label>
-              <div className="flex items-center gap-2 border border-neutral-200 p-1 rounded">
+              <label className={`block text-xs font-medium ${builderUi.mutedStrong}`}>Digit Color</label>
+              <div className={`flex items-center gap-2 border p-1 rounded ${builderUi.border}`}>
                 <input type="color" value={config.lightMode?.digitColor || JAZER_BRAND.colors.nightBlack} onChange={(e) => handleConfigChange('lightMode', { digitColor: e.target.value })} className="w-6 h-6 rounded cursor-pointer border-none" />
-                <span className="text-[10px] font-mono text-neutral-400">{config.lightMode?.digitColor || JAZER_BRAND.colors.nightBlack}</span>
+                <span className={`text-[10px] font-mono ${builderUi.muted}`}>{config.lightMode?.digitColor || JAZER_BRAND.colors.nightBlack}</span>
               </div>
             </div>
           </div>
 
           <div className="space-y-3 mt-8">
-            <div className="flex items-center gap-2 text-xs font-bold text-neutral-400 uppercase tracking-widest border-b border-neutral-100 pb-2">
+            <div className={`flex items-center gap-2 text-xs font-bold uppercase tracking-widest border-b pb-2 ${builderUi.muted} ${builderUi.border}`}>
               <Palette className="w-3 h-3" /> Dark Mode Colors
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-neutral-600">Text Color</label>
-              <div className="flex items-center gap-2 border border-neutral-200 p-1 rounded">
+              <label className={`block text-xs font-medium ${builderUi.mutedStrong}`}>Text Color</label>
+              <div className={`flex items-center gap-2 border p-1 rounded ${builderUi.border}`}>
                 <input type="color" value={config.darkMode?.textColor || JAZER_BRAND.colors.stardustWhite} onChange={(e) => handleConfigChange('darkMode', { textColor: e.target.value })} className="w-6 h-6 rounded cursor-pointer border-none" />
-                <span className="text-[10px] font-mono text-neutral-400">{config.darkMode?.textColor || JAZER_BRAND.colors.stardustWhite}</span>
+                <span className={`text-[10px] font-mono ${builderUi.muted}`}>{config.darkMode?.textColor || JAZER_BRAND.colors.stardustWhite}</span>
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-neutral-600">Panel Color</label>
-              <div className="flex items-center gap-2 border border-neutral-200 p-1 rounded">
+              <label className={`block text-xs font-medium ${builderUi.mutedStrong}`}>Panel Color</label>
+              <div className={`flex items-center gap-2 border p-1 rounded ${builderUi.border}`}>
                 <input type="color" value={config.darkMode?.panelColor || JAZER_BRAND.colors.graphite} onChange={(e) => handleConfigChange('darkMode', { panelColor: e.target.value })} className="w-6 h-6 rounded cursor-pointer border-none" />
-                <span className="text-[10px] font-mono text-neutral-400">{config.darkMode?.panelColor || JAZER_BRAND.colors.graphite}</span>
+                <span className={`text-[10px] font-mono ${builderUi.muted}`}>{config.darkMode?.panelColor || JAZER_BRAND.colors.graphite}</span>
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="block text-xs font-medium text-neutral-600">Digit Color</label>
-              <div className="flex items-center gap-2 border border-neutral-200 p-1 rounded">
+              <label className={`block text-xs font-medium ${builderUi.mutedStrong}`}>Digit Color</label>
+              <div className={`flex items-center gap-2 border p-1 rounded ${builderUi.border}`}>
                 <input type="color" value={config.darkMode?.digitColor || JAZER_BRAND.colors.stardustWhite} onChange={(e) => handleConfigChange('darkMode', { digitColor: e.target.value })} className="w-6 h-6 rounded cursor-pointer border-none" />
-                <span className="text-[10px] font-mono text-neutral-400">{config.darkMode?.digitColor || JAZER_BRAND.colors.stardustWhite}</span>
+                <span className={`text-[10px] font-mono ${builderUi.muted}`}>{config.darkMode?.digitColor || JAZER_BRAND.colors.stardustWhite}</span>
               </div>
             </div>
           </div>
 
-          <hr className="border-neutral-100" />
+          <hr className={builderUi.border} />
           {/* Clock Specific Colors */}
           {activeWidgetId === 'clock' && (
             <>
-              <hr className="border-neutral-100 my-4" />
-              <div className="p-3 bg-blue-50 border border-blue-200 rounded text-xs text-blue-800">
-                💡 <strong>Advanced Clock Features:</strong> Full light/dark mode support, 7+ clock styles, and custom fonts available in the full version.
+              <hr className={`my-4 ${builderUi.border}`} />
+              <div className={`p-3 rounded text-xs flex items-start gap-2 ${
+                isDarkMode ? 'bg-blue-500/10 border border-blue-400/30 text-blue-100' : 'bg-blue-50 border border-blue-200 text-blue-800'
+              }`}>
+                <HelpCircle className="w-4 h-4 mt-0.5" />
+                <span><strong>Advanced Clock Features:</strong> Full light/dark mode support, 7+ clock styles, and custom fonts available in the full version.</span>
               </div>
             </>
           )}
 
         </div>
         {!isDesktop && (
-          <div className="fixed bottom-4 left-4 right-4 z-30 flex items-center gap-3 bg-[#0A0C12]/95 border border-white/10 rounded-full px-4 py-2 shadow-lg shadow-black/40 backdrop-blur">
+          <div className={`fixed bottom-4 left-4 right-4 z-30 flex items-center gap-3 rounded-full px-4 py-2 shadow-lg backdrop-blur border ${
+            isDarkMode ? 'bg-[#0A0C12]/95 border-white/10 shadow-black/40' : 'bg-white/95 border-slate-200 shadow-slate-200/70'
+          }`}>
             <button
               type="button"
               onClick={() => setShowTabMenu(true)}
-              className="flex-1 px-3 py-2 rounded-full text-xs font-semibold uppercase tracking-[0.3em] border border-white/15 text-neutral-200 hover:border-purple-300 hover:text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400"
+              className={`flex-1 px-3 py-2 rounded-full text-xs font-semibold uppercase tracking-[0.3em] border transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-purple-400 ${builderUi.ghostButton}`}
             >
               Sections
             </button>
             <button
               type="button"
               onClick={() => setShowExport(true)}
-              className="flex-1 px-3 py-2 rounded-full text-xs font-semibold uppercase tracking-[0.3em] border border-white/15 text-neutral-200 hover:border-pink-300 hover:text-white transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-300"
+              className={`flex-1 px-3 py-2 rounded-full text-xs font-semibold uppercase tracking-[0.3em] border transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pink-300 ${builderUi.ghostButton}`}
             >
               Export
             </button>
@@ -3778,6 +4188,9 @@ export default function App() {
   const [returnView, setReturnView] = useState('landing');
   const [showShortcutsHelp, setShowShortcutsHelp] = useState(false);
   const [searchInputRef, setSearchInputRef] = useState(null);
+  const { theme } = useTheme();
+  const isDarkMode = Boolean(theme?.isDark);
+  const appBackground = isDarkMode ? 'var(--jazer-night-black)' : '#F0F9FF';
 
   const navigateToBuilder = (id) => {
     setSelectedWidgetId(id);
@@ -3883,7 +4296,7 @@ export default function App() {
         ${BRAND_KITS.jazer.extraCSS}
       `}</style>
 
-      <div className="min-h-screen flex flex-col" style={{ backgroundColor: 'var(--jazer-night-black)' }}>
+      <div className="min-h-screen flex flex-col" style={{ backgroundColor: appBackground }}>
         <GlobalNavigation
           currentView={view}
           onNavigateHome={navigateToHome}

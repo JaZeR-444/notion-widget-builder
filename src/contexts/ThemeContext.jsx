@@ -8,9 +8,23 @@ const getPreferredDark = () => {
   return window.matchMedia('(prefers-color-scheme: dark)').matches;
 };
 
+const getStoredColorMode = () => {
+  if (typeof window === 'undefined') return 'system';
+  try {
+    const stored = window.localStorage.getItem('jazer_color_mode');
+    if (stored === 'light' || stored === 'dark' || stored === 'system') {
+      return stored;
+    }
+    return 'system';
+  } catch {
+    return 'system';
+  }
+};
+
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(jazerNeonTheme); // Default to Neon theme
-  const [isDark, setIsDark] = useState(() => getPreferredDark());
+  const [systemPrefersDark, setSystemPrefersDark] = useState(() => getPreferredDark());
+  const [colorMode, setColorMode] = useState(() => getStoredColorMode());
   const [activeBrandId, setActiveBrandId] = useState('jazer-neon'); // Track active brand kit
 
   // Listen for system dark mode changes
@@ -18,11 +32,35 @@ export const ThemeProvider = ({ children }) => {
     // Ensure window is defined before accessing matchMedia
     if (typeof window !== 'undefined') {
       const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      const handler = (e) => setIsDark(e.matches);
-      mediaQuery.addEventListener('change', handler);
-      return () => mediaQuery.removeEventListener('change', handler);
+      const handler = (e) => setSystemPrefersDark(e.matches);
+      if (mediaQuery.addEventListener) {
+        mediaQuery.addEventListener('change', handler);
+      } else {
+        mediaQuery.addListener(handler);
+      }
+      return () => {
+        if (mediaQuery.removeEventListener) {
+          mediaQuery.removeEventListener('change', handler);
+        } else {
+          mediaQuery.removeListener(handler);
+        }
+      };
     }
   }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem('jazer_color_mode', colorMode);
+    } catch {
+      // ignore write errors
+    }
+  }, [colorMode]);
+
+  const isDark = useMemo(() => {
+    if (colorMode === 'system') return systemPrefersDark;
+    return colorMode === 'dark';
+  }, [colorMode, systemPrefersDark]);
 
   // Helper function to update both theme and brand ID
   const updateTheme = useCallback((newTheme, brandId = 'custom') => {
@@ -46,11 +84,16 @@ export const ThemeProvider = ({ children }) => {
     return {
       ...theme,
       isDark,
+      colorMode,
       activeBrandId,
       // Helper to check if using Neon theme
       isJazerNeon: activeBrandId === 'jazer-neon',
     };
-  }, [theme, isDark, activeBrandId]);
+  }, [theme, isDark, colorMode, activeBrandId]);
+
+  const toggleColorMode = useCallback(() => {
+    setColorMode((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  }, []);
 
   const contextValue = useMemo(() => ({
     theme: activeTheme,
@@ -58,9 +101,12 @@ export const ThemeProvider = ({ children }) => {
     resetToJazerNeon,
     getColor,
     activeBrandId,
+    colorMode,
+    setColorMode,
+    toggleColorMode,
     // Expose jazerNeonTheme as the base theme
     baseTheme: jazerNeonTheme,
-  }), [activeTheme, updateTheme, resetToJazerNeon, getColor, activeBrandId]);
+  }), [activeTheme, updateTheme, resetToJazerNeon, getColor, activeBrandId, colorMode, setColorMode, toggleColorMode]);
 
   return (
     <ThemeContext.Provider value={contextValue}>
