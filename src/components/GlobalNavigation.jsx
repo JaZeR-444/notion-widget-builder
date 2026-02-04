@@ -85,13 +85,15 @@ export function GlobalNavigation({
               className="flex items-center gap-3 focus-ring rounded-lg group"
               aria-label="Go to home"
             >
-              <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-purple-500 via-pink-500 to-purple-600 flex items-center justify-center font-black text-white shadow-lg group-hover:scale-105 transition-transform">
-                NW
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-neutral-400">Widget</p>
-                <p className="text-base font-semibold text-white">Notion Wiz</p>
-              </div>
+              <img 
+                src="Notion Widget Builder Logo (150 x 50 px).png" 
+                alt="Notion Widget Builder" 
+                className="h-10 w-auto max-w-[200px] group-hover:scale-105 transition-transform"
+                onError={(e) => {
+                  console.error('Logo failed to load');
+                  e.target.style.display = 'none';
+                }}
+              />
             </button>
 
             {/* Mobile menu button */}

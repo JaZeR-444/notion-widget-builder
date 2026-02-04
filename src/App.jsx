@@ -282,9 +282,9 @@ const JAZER_BRAND = {
     minWidthPrint: 30, // mm - print minimum
     clearSpace: '1em',
     paths: {
-      svg: '/logo.svg',
-      gif: '/logo.svg',
-      favicon: '/icon.svg'
+      svg: 'Notion Widget Builder Logo (150 x 50 px).png',
+      gif: 'Notion Widget Builder Logo (150 x 50 px).png',
+      favicon: 'Notion Widget Builder Icon (100 x 100 px).png'
     }
   }
 };
@@ -1948,8 +1948,12 @@ function WidgetLandingPage({ onSelect, onBrandGenerator, setSearchInputRef }) {
             <span className="px-3 py-1 text-[11px] uppercase tracking-[0.3em] rounded-full border border-white/15 text-neutral-300">Final Widget List v1.2</span>
             <span className="px-3 py-1 text-[11px] uppercase tracking-[0.3em] rounded-full border border-white/15 text-neutral-300">Professional Grade</span>
           </div>
-          <div className="inline-flex items-center justify-center p-3 rounded-full animate-pulse-neon mx-auto" style={{ backgroundColor: 'rgba(139, 92, 246, 0.1)', border: '1px solid var(--jazer-electric-purple)' }}>
-            <Sparkles className="w-8 h-8" style={{ color: 'var(--jazer-electric-purple)' }} />
+          <div className="flex items-center justify-center">
+            <img 
+              src="Notion Widget Builder Icon (100 x 100 px).png" 
+              alt="Notion Widget Builder" 
+              className="h-24 md:h-32 w-auto"
+            />
           </div>
           <h1 className="text-4xl md:text-6xl font-black tracking-tight gradient-text neon-text" style={{ fontFamily: 'Orbitron, sans-serif' }}>
             Design-grade Notion Widgets
