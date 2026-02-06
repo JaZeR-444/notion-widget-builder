@@ -2,9 +2,9 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   plugins: [react()],
-  base: process.env.VERCEL ? '/' : '/notion-widget-builder/', // Use root for Vercel, GitHub Pages path otherwise
+  base: mode === 'github' ? '/notion-widget-builder/' : '/',
   build: {
     outDir: 'dist',
     sourcemap: false, // Disable sourcemaps in production
@@ -28,4 +28,4 @@ export default defineConfig({
     port: 3002,
     open: false
   }
-})
+}))
