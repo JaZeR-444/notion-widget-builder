@@ -15,16 +15,31 @@ export default {
         'xl': '2rem',      // 32px
         '2xl': '3rem',     // 48px
       },
-      // JaZeR Brand Color Palette
+      // MetraNode Brand Color Palette (Purple, Pink, Blue theme)
       colors: {
-        jazer: {
+        metranode: {
+          // Primary purple-pink-blue gradient colors
+          'vivid-purple': '#A855F7',      // Vibrant purple (primary)
+          'deep-purple': '#7C3AED',       // Deep purple (accent)
+          'electric-pink': '#EC4899',     // Electric pink (highlight)
+          'hot-pink': '#F472B6',          // Hot pink (secondary)
+          'sky-blue': '#3B82F6',          // Sky blue (accent)
+          'cyan-blue': '#06B6D4',         // Cyan blue (utility)
+          
+          // Neutral palette
+          'night-black': '#0A0A0F',       // Deep black background
+          'dark-slate': '#1E1E2E',        // Dark slate
+          'slate-gray': '#2D2D3D',        // Slate gray
+          'soft-gray': '#9CA3AF',         // Soft gray text
+          'light-white': '#F9FAFB',       // Light white
+          
+          // Legacy jazer colors (for backward compatibility)
           'electric-purple': '#8B5CF6',
           'cosmic-blue': '#3B82F6',
           'neon-pink': '#EC4899',
           'sunburst-gold': '#F59E0B',
           'aether-teal': '#06B6D4',
           'ultraviolet': '#A78BFA',
-          'night-black': '#0B0E12',
           'stardust-white': '#F8F9FF',
           'graphite': '#1F2937',
           'soft-slate': '#94A3B8',
@@ -44,6 +59,13 @@ export default {
         'neon-strong': '0 0 8px rgba(139, 92, 246, 0.6)',
       },
       backgroundImage: {
+        // MetraNode brand gradients (purple-pink-blue theme)
+        'metranode-gradient': 'linear-gradient(135deg, #A855F7 0%, #EC4899 50%, #3B82F6 100%)',
+        'metranode-gradient-horizontal': 'linear-gradient(90deg, #A855F7 0%, #EC4899 50%, #3B82F6 100%)',
+        'metranode-purple-pink': 'linear-gradient(135deg, #7C3AED 0%, #EC4899 100%)',
+        'metranode-pink-blue': 'linear-gradient(135deg, #EC4899 0%, #3B82F6 100%)',
+        
+        // Legacy gradients
         'jazer-gradient': 'linear-gradient(90deg, #EC4899 0%, #F59E0B 28%, #06B6D4 50%, #3B82F6 74%, #8B5CF6 100%)',
         'jazer-gradient-purple-blue': 'linear-gradient(135deg, #8B5CF6 0%, #3B82F6 100%)',
       },

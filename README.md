@@ -1,16 +1,15 @@
 <div align="center">
 
-<img src="./Notion Widget Builder Logo.svg" alt="Notion Widget Builder Logo" width="400" />
+<img src="./public/logo.svg" alt="MetraNode Logo" width="400" />
 
-# 🎨 Notion Widget Builder
+# 🎨 MetraNode
 
 ### *Transform Your Notion Workspace with Beautiful, Custom Widgets*
 
-[![Live Demo](https://img.shields.io/badge/🌐_Live_Demo-Launch_Builder-8B5CF6?style=for-the-badge)](https://jazer-444.github.io/notion-widget-builder/)
 [![License](https://img.shields.io/badge/License-MIT-F59E0B?style=for-the-badge)](./LICENSE)
 [![Made with React](https://img.shields.io/badge/Made_with-React_19-61DAFB?style=for-the-badge&logo=react)](https://react.dev/)
 
-<img src="./Notion Widget Builder Icon (100 x 100 px).svg" alt="App Icon" width="100" />
+<img src="./public/icon.svg" alt="App Icon" width="100" />
 
 **A powerful visual builder for creating stunning, fully customizable Notion widgets.**  
 No coding required • Real-time preview • One-click export • Works anywhere

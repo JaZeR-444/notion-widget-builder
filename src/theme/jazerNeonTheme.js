@@ -54,9 +54,9 @@ const JAZER_LOGO_PATHS = {
   minWidthPrint: 30,
   clearSpace: '1em',
   paths: {
-    svg: 'Notion Widget Builder Logo (150 x 50 px).png',
-    gif: 'Notion Widget Builder Logo (150 x 50 px).png',
-    favicon: 'Notion Widget Builder Icon (100 x 100 px).png'
+    svg: `${import.meta.env.BASE_URL}logo.svg`,
+    gif: `${import.meta.env.BASE_URL}logo.svg`,
+    favicon: `${import.meta.env.BASE_URL}icon.svg`
   }
 };
 
